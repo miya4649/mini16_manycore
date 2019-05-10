@@ -17,47 +17,45 @@ import java.lang.Math;
 
 public class PEProgram extends AsmLib
 {
-  private static final int CODE_ROM_WIDTH = 16;
-  private static final int DATA_ROM_WIDTH = 32;
-  private static final int CODE_ROM_DEPTH = 10;
-  private static final int DATA_ROM_DEPTH = 8;
-  private static final int FIFO_ADDR = (PE_W_BANK_FIFO << DEPTH_B_S_W);
-  private static final int VRAM_ADDR_H = ((FIFO_ADDR + (FIFO_BANK_VRAM << DEPTH_B_F)) >>> 15);
-  private static final int VRAM_ADDR_SHIFT = 15;
-  private static final int M2S_ADDR_H = PE_R_BANK_M2S;
-  private static final int M2S_ADDR_SHIFT = DEPTH_B_S_R;
-  private static final int S2M_ADDR_H = ((FIFO_ADDR + (FIFO_BANK_S2M << DEPTH_B_F)) >>> 15);
-  private static final int S2M_ADDR_SHIFT = 15;
-  private static final int IMAGE_WIDTH_BITS = 8;
-  private static final int IMAGE_HEIGHT_BITS = 8;
-  private static final int IMAGE_WIDTH_HALF_BITS = (IMAGE_WIDTH_BITS - 1);
-  private static final int IMAGE_HEIGHT_HALF_BITS = (IMAGE_HEIGHT_BITS - 1);
-  private static final int IMAGE_WIDTH = (1 << IMAGE_WIDTH_BITS);
-  private static final int IMAGE_HEIGHT = (1 << IMAGE_HEIGHT_BITS);
-  private static final int IMAGE_WIDTH_HALF = (1 << IMAGE_WIDTH_HALF_BITS);
-  private static final int IMAGE_HEIGHT_HALF = (1 << IMAGE_HEIGHT_HALF_BITS);
+  private int FIFO_ADDR;
+  private int VRAM_ADDR_H;
+  private int VRAM_ADDR_SHIFT;
+  private int M2S_ADDR_H;
+  private int M2S_ADDR_SHIFT;
+  private int ITEM_COUNT_ADDR_H;
+  private int ITEM_COUNT_ADDR_SHIFT;
+  private int S2M_ADDR_H;
+  private int S2M_ADDR_SHIFT;
+  private int IMAGE_WIDTH_BITS;
+  private int IMAGE_HEIGHT_BITS;
+  private int IMAGE_WIDTH_HALF_BITS;
+  private int IMAGE_HEIGHT_HALF_BITS;
+  private int IMAGE_WIDTH;
+  private int IMAGE_HEIGHT;
+  private int IMAGE_WIDTH_HALF;
+  private int IMAGE_HEIGHT_HALF;
 
   private void m_mandel_core()
   {
-    int x = 9;
-    int y = 10;
-    int scale = 11;
-    int count = 12;
-    int cx = 13;
-    int cy = 14;
-    int a = 16;
-    int b = 17;
-    int aa = 18;
-    int bb = 19;
-    int c = 20;
-    int x1 = 21;
-    int y1 = 22;
-    int cmask = 23;
-    int max_c = 24;
-    int pc = 25;
-    int tmp1 = 26;
-    int tmp2 = 27;
-    int tmp3 = 28;
+    int x = 11;
+    int y = 12;
+    int scale = 13;
+    int count = 14;
+    int cx = 15;
+    int cy = 16;
+    int a = 17;
+    int b = 18;
+    int aa = 19;
+    int bb = 20;
+    int c = 21;
+    int x1 = 22;
+    int y1 = 23;
+    int cmask = 24;
+    int max_c = 25;
+    int pc = 26;
+    int tmp1 = 27;
+    int tmp2 = 28;
+    int tmp3 = 29;
 
     // const
     int FIXED_BITS = 13;
@@ -70,7 +68,7 @@ public class PEProgram extends AsmLib
     aa = 0;
     bb = 0;
     scale = 256;
-    count = 256;
+    count = 100;
     cmask = 252;
     max_c = MAX_C << FIXED_BITS;
     x1 = ((x - IMAGE_WIDTH_HALF) * scale) + cx;
@@ -96,7 +94,7 @@ public class PEProgram extends AsmLib
     as_mvi(bb, 0);
     as_mv(x1, x);
     as_mv(y1, y);
-    lib_set_im(count, 1024);
+    lib_set_im(count, 100);
     lib_set_im(tmp1, IMAGE_WIDTH_HALF);
     lib_set_im(tmp2, IMAGE_HEIGHT_HALF);
     as_mvi(max_c, 4);
@@ -218,27 +216,114 @@ public class PEProgram extends AsmLib
     lib_bc("m_mandel_core_L_0");
   }
 
+  private void m_fill_vram()
+  {
+    int MAX_ITEM = 3;
+    int item_count_addr = 3;
+    int task_id = 4;
+    int my_core_id = 7;
+    int parallel = 8;
+    int vram_addr = 9;
+    int i = 10;
+    int page = 11;
+    int item_count = 11;
+    int tmp0 = 12;
+    /*
+    lib_push(vram_addr);
+    
+    page = task_id & 1;
+    i = (1 << (IMAGE_WIDTH_BITS + IMAGE_HEIGHT_BITS)) - 1 - my_core_id;
+    vram_addr += (page << (IMAGE_WIDTH_BITS + IMAGE_HEIGHT_BITS)) + i;
+    item_count_addr = ITEM_COUNT_ADDR_H << ITEM_COUNT_ADDR_SHIFT;
+    do
+    {
+      // fifo full check
+      do
+      {
+        item_count = mem[item_count_addr];
+        item_count -= MAX_ITEM;
+      } while (item_count >= 0);
+
+      mem[vram_addr] = task_id;
+      vram_addr -= parallel;
+      i -= parallel;
+    } while (i >=0);
+    lib_pop(vram_addr);
+    */
+
+    lib_push(vram_addr);
+
+    as_mvi(i, 1);
+    as_mv(page, task_id);
+    lib_set_im(tmp0, IMAGE_WIDTH_BITS + IMAGE_HEIGHT_BITS);
+    lib_sl(i, tmp0);
+    lib_wait_dep_pre();
+    as_andi(page, 1);
+    lib_wait_dep_post();
+    as_subi(i, 1);
+    lib_wait_dep_pre();
+    lib_sl(page, tmp0);
+    lib_wait_dep_post();
+    lib_wait_dep_pre();
+    as_sub(i, my_core_id);
+    lib_wait_dep_post();
+    lib_wait_dep_pre();
+    as_add(page, i);
+    lib_wait_dep_post();
+    as_add(vram_addr, page);
+
+    lib_wait_dep_pre();
+    as_mvi(item_count_addr, ITEM_COUNT_ADDR_H);
+    lib_wait_dep_post();
+    lib_sli(item_count_addr, ITEM_COUNT_ADDR_SHIFT);
+    lib_wait_dependency();
+
+    label("m_fill_vram_L_0");
+
+    lib_wait_dep_pre();
+    as_ld(item_count, item_count_addr);
+    lib_wait_dep_post();
+    lib_wait_dep_pre();
+    as_subi(item_count, MAX_ITEM);
+    lib_wait_dep_post();
+    as_cnm(SP_REG_CP, item_count);
+    lib_bc("m_fill_vram_L_0");
+
+    as_st(vram_addr, task_id);
+    as_sub(vram_addr, parallel);
+    lib_wait_dep_pre();
+    as_sub(i, parallel);
+    lib_wait_dep_post();
+    as_cnm(SP_REG_CP, i);
+    lib_bc("m_fill_vram_L_0");
+    lib_pop(vram_addr);
+  }
+
   private void m_mandel()
   {
-    int my_core_id = 4;
-    int parallel = 5;
-    int task_id = 6;
-    int vram_addr = 7;
-    int m2s_addr = 8;
-    int page = 8;
-    int x = 9;
-    int y = 10;
-    int scale = 11;
-    int count = 12;
-    int cx = 13;
-    int cy = 14;
-    int i = 15;
+    int task_id = 4;
+    int m2s_addr = 5;
+    int my_core_id = 7;
+    int parallel = 8;
+    int vram_addr = 9;
+    int i = 10;
+    int page = 11;
+    int x = 11;
+    int y = 12;
+    int scale = 13;
+    int count = 14;
+    int cx = 15;
+    int cy = 16;
     // temp
-    int tmp0 = 16;
-    int param_addr = 16;
+    int tmp0 = 17;
+    int param_addr = 17;
     /*
     lib_push_regs(4, 6); // push R4-R9
-    get_param;
+    // get param
+    scale = mem[m2s_addr + 1];
+    cx = mem[m2s_addr + 2];
+    cy = mem[m2s_addr + 3];
+    
     page = task_id & 1;
     vram_addr += (page << (IMAGE_WIDTH_BITS + IMAGE_HEIGHT_BITS)) + (1 << (IMAGE_WIDTH_BITS + IMAGE_HEIGHT_BITS)) - 1 - my_core_id;
     i = (1 << (IMAGE_WIDTH_BITS + IMAGE_HEIGHT_BITS)) - 1 - my_core_id;
@@ -246,7 +331,7 @@ public class PEProgram extends AsmLib
     {
       x = i & ((1 << IMAGE_WIDTH_BITS) - 1);
       y = i >> IMAGE_WIDTH_BITS;
-      m_mandel();
+      m_mandel_core();
       mem[vram_addr] = count;
       vram_addr -= parallel;
       i -= parallel;
@@ -276,9 +361,7 @@ public class PEProgram extends AsmLib
     as_mvi(i, 1);
     as_mv(page, task_id);
     as_mvi(tmp0, 1);
-    lib_wait_dep_pre();
-    as_mvil(IMAGE_WIDTH_BITS + IMAGE_HEIGHT_BITS);
-    lib_wait_dep_post();
+    lib_mvil(IMAGE_WIDTH_BITS + IMAGE_HEIGHT_BITS);
     as_sl(i, SP_REG_MVIL);
     as_sl(tmp0, SP_REG_MVIL);
     lib_wait_dep_pre();
@@ -322,61 +405,24 @@ public class PEProgram extends AsmLib
     lib_pop_regs(4, 6);
   }
 
-  private void f_get_m2s_addr()
-  {
-    // output: R3:m2s_addr
-    int m2s_addr = 3;
-    // m2s_addr = M2S_ADDR_H << M2S_ADDR_SHIFT;
-    label("f_get_m2s_addr");
-    lib_wait_dep_pre();
-    as_mvi(m2s_addr, M2S_ADDR_H);
-    lib_wait_dep_post();
-    as_sli(m2s_addr, M2S_ADDR_SHIFT);
-    lib_return();
-  }
-
-  private void f_get_s2m_addr()
-  {
-    // output: R3:s2m_addr
-    int s2m_addr = 3;
-    // s2m_addr = S2M_ADDR_H << S2M_ADDR_SHIFT;
-    label("f_get_s2m_addr");
-    lib_wait_dep_pre();
-    as_mvi(s2m_addr, S2M_ADDR_H);
-    lib_wait_dep_post();
-    as_sli(s2m_addr, S2M_ADDR_SHIFT);
-    lib_return();
-  }
-
-  private void f_get_vram_addr()
-  {
-    // output: R3:vram_addr
-    int vram_addr = 3;
-    // vram_addr = VRAM_ADDR_H << VRAM_ADDR_SHIFT;
-    label("f_get_vram_addr");
-    lib_wait_dep_pre();
-    as_mvi(vram_addr, VRAM_ADDR_H);
-    lib_wait_dep_post();
-    as_sli(vram_addr, VRAM_ADDR_SHIFT);
-    lib_return();
-  }
-
   private void pe_thread_manager()
   {
-    int my_core_id = 4;
-    int parallel = 5;
-    int task_id = 6;
-    int vram_addr = 7;
-    int m2s_addr = 8;
-    int s2m_addr = 9;
+    int task_id = 4;
+    int m2s_addr = 5;
+    int s2m_addr = 6;
+    int my_core_id = 7;
+    int parallel = 8;
+    int vram_addr = 9;
     // temp
     int master_task_id = 10;
     int diff = 11;
     /*
-    m2s_addr = lib_call("f_get_m2s_addr");
-    vram_addr = lib_call("f_get_vram_addr");
+    as_nop();
+    lib_init_stack();
+    m2s_addr = m_get_m2s_addr();
+    vram_addr = m_get_vram_addr();
+    s2m_addr = m_get_s2m_addr();
     my_core_id = mem[m2s_addr];
-    s2m_addr = lib_call("f_get_s2m_addr");
     s2m_addr += my_core_id;
     m2s_addr++;
     parallel = mem[m2s_addr];
@@ -392,17 +438,22 @@ public class PEProgram extends AsmLib
         master_task_id = mem[m2s_addr];
         diff = master_task_id - task_id;
       } while (diff != 0);
-      lib_call("f_mandel");
+      m_mandel();
     } (1);
     */
     as_nop();
     lib_init_stack();
-    lib_call("f_get_m2s_addr");
-    as_mv(m2s_addr, R3);
-    lib_call("f_get_vram_addr");
-    as_mv(vram_addr, R3);
-    lib_call("f_get_s2m_addr");
-    as_mv(s2m_addr, R3);
+    // get m2s,vram,s2m addr
+    as_mvi(m2s_addr, M2S_ADDR_H);
+    as_mvi(s2m_addr, S2M_ADDR_H);
+    lib_wait_dep_pre();
+    as_mvi(vram_addr, VRAM_ADDR_H);
+    lib_wait_dep_post();
+    lib_sli(m2s_addr, M2S_ADDR_SHIFT);
+    lib_sli(s2m_addr, S2M_ADDR_SHIFT);
+    lib_sli(vram_addr, VRAM_ADDR_SHIFT);
+    lib_wait_dependency();
+
     as_ld(my_core_id, m2s_addr);
     lib_wait_dep_pre();
     as_addi(m2s_addr, 1);
@@ -437,37 +488,83 @@ public class PEProgram extends AsmLib
     as_cnz(SP_REG_CP, diff);
     lib_bc("pe_thread_manager_L_1");
 
-    m_mandel();
+    if (WIDTH_P_D == 32)
+    {
+      m_mandel();
+    }
+    else
+    {
+      m_fill_vram();
+    }
 
     lib_ba("pe_thread_manager_L_0");
     label("pe_thread_manager_L_end");
     lib_call("f_halt");
     // link
-    f_get_m2s_addr();
-    f_get_s2m_addr();
-    f_get_vram_addr();
-    f_wait();
     f_halt();
   }
 
   @Override
-  public void init()
+  public void init(String[] args)
   {
-    set_rom_width(CODE_ROM_WIDTH, DATA_ROM_WIDTH);
-    set_rom_depth(CODE_ROM_DEPTH, DATA_ROM_DEPTH);
-    set_stack_address((1 << DATA_ROM_DEPTH) - 1);
-    set_filename("default_pe");
+    super.init(args);
+    DEPTH_REG = opts.getIntValue("pe_depth_reg");
+    REGS = (1 << DEPTH_REG);
+    SP_REG_STACK_POINTER = (REGS - 1);
+    STACK_ADDRESS = ((1 << DEPTH_P_D) - 1);
+    ENABLE_MVIL = opts.getIntValue("pe_enable_mvil");
+    ENABLE_MUL = opts.getIntValue("pe_enable_mul");
+    ENABLE_MVC = opts.getIntValue("pe_enable_mvc");
+    ENABLE_WA = opts.getIntValue("pe_enable_wa");
+    ENABLE_MULTI_BIT_SHIFT = opts.getIntValue("pe_enable_multi_bit_shift");
+    LREG0 = opts.getIntValue("lreg_start") + 0;
+    LREG1 = opts.getIntValue("lreg_start") + 1;
+    LREG2 = opts.getIntValue("lreg_start") + 2;
+    LREG3 = opts.getIntValue("lreg_start") + 3;
+    LREG4 = opts.getIntValue("lreg_start") + 4;
+    LREG5 = opts.getIntValue("lreg_start") + 5;
+    LREG6 = opts.getIntValue("lreg_start") + 6;
+
+    FIFO_ADDR = (PE_W_BANK_FIFO << DEPTH_B_S_W);
+    VRAM_ADDR_SHIFT = DEPTH_B_S_W - 3;
+    VRAM_ADDR_H = ((FIFO_ADDR + (FIFO_BANK_VRAM << DEPTH_B_F)) >>> VRAM_ADDR_SHIFT);
+    M2S_ADDR_H = PE_R_BANK_M2S;
+    M2S_ADDR_SHIFT = DEPTH_B_S_R;
+    ITEM_COUNT_ADDR_H = PE_R_BANK_ITEM_COUNT;
+    ITEM_COUNT_ADDR_SHIFT = DEPTH_B_S_R;
+    S2M_ADDR_SHIFT = DEPTH_B_S_W - 3;
+    S2M_ADDR_H = ((FIFO_ADDR + (FIFO_BANK_S2M << DEPTH_B_F)) >>> S2M_ADDR_SHIFT);
+    IMAGE_WIDTH_BITS = opts.getIntValue("image_width_bits");
+    IMAGE_HEIGHT_BITS = opts.getIntValue("image_height_bits");
+    IMAGE_WIDTH_HALF_BITS = (IMAGE_WIDTH_BITS - 1);
+    IMAGE_HEIGHT_HALF_BITS = (IMAGE_HEIGHT_BITS - 1);
+    IMAGE_WIDTH = (1 << IMAGE_WIDTH_BITS);
+    IMAGE_HEIGHT = (1 << IMAGE_HEIGHT_BITS);
+    IMAGE_WIDTH_HALF = (1 << IMAGE_WIDTH_HALF_BITS);
+    IMAGE_HEIGHT_HALF = (1 << IMAGE_HEIGHT_HALF_BITS);
   }
 
   @Override
   public void program()
   {
+    set_filename("default_pe_code");
+    set_rom_width(WIDTH_I);
+    set_rom_depth(DEPTH_P_I);
     pe_thread_manager();
+
+    // link
+    if (ENABLE_MULTI_BIT_SHIFT != 1)
+    {
+      f_lib_sl();
+    }
   }
 
   @Override
   public void data()
   {
+    set_filename("default_pe_data");
+    set_rom_width(WIDTH_P_D);
+    set_rom_depth(DEPTH_P_D);
     label("d_rand");
     dat(0xfc720c27);
   }

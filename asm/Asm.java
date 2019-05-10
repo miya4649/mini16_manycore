@@ -18,17 +18,8 @@ import java.util.*;
 
 public class Asm
 {
-  private static final int OPERAND_BITS = 5;
-  private static final int REG_IM_BITS = 5;
-  private static final int W_CODE = 0;
-  private static final int W_DATA = 1;
-
   private int romWidth = 8;
   private int romDepth = 8;
-  private int codeROMWidth = 16;
-  private int dataROMWidth = 32;
-  private int codeROMDepth = 8;
-  private int dataROMDepth = 8;
   private int pAddress;
   private int pass;
   private String fileName = "default";
@@ -58,24 +49,11 @@ public class Asm
   private static final int I_CNZ  = 0x1c; // 5'b11100;
   private static final int I_CNM  = 0x1d; // 5'b11101;
 
-  public void write_mem(int mode)
+  public void write_mem()
   {
     try
     {
-      String name;
-      if (mode == W_CODE)
-      {
-        name = "code";
-        romDepth = codeROMDepth;
-        romWidth = codeROMWidth;
-      }
-      else
-      {
-        name = "data";
-        romDepth = dataROMDepth;
-        romWidth = dataROMWidth;
-      }
-      String hdlName = fileName + "_" + name + "_mem";
+      String hdlName = fileName + "_mem";
       File file = new File("../" + hdlName + ".v");
       file.createNewFile();
       PrintWriter writer = new PrintWriter(file);
@@ -124,10 +102,10 @@ public class Asm
         switch (romWidth)
         {
           case 8:
-            writer.printf("      ram[16'h%04x] = 8'h%02x;\n", i, d);
+            writer.printf("      ram[16'h%04x] = 8'h%02x;\n", i, d & 0xff);
             break;
           case 16:
-            writer.printf("      ram[16'h%04x] = 16'h%04x;\n", i, d);
+            writer.printf("      ram[16'h%04x] = 16'h%04x;\n", i, d & 0xffff);
             break;
           default:
             writer.printf("      ram[16'h%04x] = 32'h%08x;\n", i, d);
@@ -145,21 +123,11 @@ public class Asm
     }
   }
 
-  public void write_binary(int mode)
+  public void write_binary()
   {
     try
     {
-      String name;
-      if (mode == W_CODE)
-      {
-        name = "code";
-      }
-      else
-      {
-        name = "data";
-      }
-      String binName = fileName + "_" + name;
-      File file = new File("../" + binName + ".bin");
+      File file = new File("../" + fileName + ".bin");
       file.createNewFile();
       FileOutputStream fos = new FileOutputStream(file);
       DataOutputStream dos = new DataOutputStream(fos);
@@ -175,7 +143,7 @@ public class Asm
     }
   }
 
-  public void init()
+  public void init(String[] args)
   {
     // init: must be implemented in sub-classes
   }
@@ -188,6 +156,18 @@ public class Asm
   public void data()
   {
     // data: must be implemented in sub-classes
+  }
+
+  public void check_limit(int value, int min, int max, String message)
+  {
+    if (pass == 0)
+    {
+      return;
+    }
+    if ((value < min) || (value > max))
+    {
+      System.out.printf("Warning: value exceeded the limit. file:%s address:%x inst:%s value:%d min:%d max:%d\n", fileName, pAddress, message, value, min, max);
+    }
   }
 
   // Print Error
@@ -210,32 +190,12 @@ public class Asm
   public void set_rom_depth(int depth)
   {
     romDepth = depth;
-    codeROMDepth = depth;
-    dataROMDepth = depth;
-  }
-
-  // set rom depth
-  public void set_rom_depth(int code_depth, int data_depth)
-  {
-    romDepth = code_depth;
-    codeROMDepth = code_depth;
-    dataROMDepth = data_depth;
   }
 
   // set rom width
   public void set_rom_width(int width)
   {
     romWidth = width;
-    codeROMWidth = width;
-    dataROMWidth = width;
-  }
-
-  // set rom width
-  public void set_rom_width(int code_width, int data_width)
-  {
-    romWidth = code_width;
-    codeROMWidth = code_width;
-    dataROMWidth = data_width;
   }
 
   // set filename
@@ -284,9 +244,9 @@ public class Asm
     return labelValue.get(key) - pAddress;
   }
 
-  public void do_asm()
+  public void do_asm(String[] args)
   {
-    init();
+    init(args);
 
     labelValue.clear();
     data.clear();
@@ -303,13 +263,13 @@ public class Asm
     pAddress = 0;
     data.clear();
     program();
-    write_mem(W_CODE);
-    write_binary(W_CODE);
+    write_mem();
+    write_binary();
     pAddress = 0;
     data.clear();
     data();
-    write_mem(W_DATA);
-    write_binary(W_DATA);
+    write_mem();
+    write_binary();
   }
 
   private void store_inst(int inst)
@@ -452,6 +412,7 @@ public class Asm
 
   public void as_sti(int reg_d, int reg_a)
   {
+    check_limit(reg_a, -16, 15, "sti");
     set_inst_normal(reg_d, reg_a, 1, I_ST);
   }
 
@@ -467,6 +428,7 @@ public class Asm
 
   public void as_mvi(int reg_d, int reg_a)
   {
+    check_limit(reg_a, -16, 15, "mvi");
     set_inst_normal(reg_d, reg_a, 1, I_MV);
   }
 
@@ -477,6 +439,7 @@ public class Asm
 
   public void as_addi(int reg_d, int reg_a)
   {
+    check_limit(reg_a, -16, 15, "addi");
     set_inst_normal(reg_d, reg_a, 1, I_ADD);
   }
 
@@ -487,6 +450,7 @@ public class Asm
 
   public void as_subi(int reg_d, int reg_a)
   {
+    check_limit(reg_a, -16, 15, "subi");
     set_inst_normal(reg_d, reg_a, 1, I_SUB);
   }
 
@@ -497,6 +461,7 @@ public class Asm
 
   public void as_andi(int reg_d, int reg_a)
   {
+    check_limit(reg_a, -16, 15, "andi");
     set_inst_normal(reg_d, reg_a, 1, I_AND);
   }
 
@@ -507,6 +472,7 @@ public class Asm
 
   public void as_ori(int reg_d, int reg_a)
   {
+    check_limit(reg_a, -16, 15, "ori");
     set_inst_normal(reg_d, reg_a, 1, I_OR);
   }
 
@@ -517,6 +483,7 @@ public class Asm
 
   public void as_xori(int reg_d, int reg_a)
   {
+    check_limit(reg_a, -16, 15, "xori");
     set_inst_normal(reg_d, reg_a, 1, I_XOR);
   }
 
@@ -527,11 +494,13 @@ public class Asm
 
   public void as_muli(int reg_d, int reg_a)
   {
+    check_limit(reg_a, -16, 15, "muli");
     set_inst_normal(reg_d, reg_a, 1, I_MUL);
   }
 
   public void as_mvil(int im)
   {
+    check_limit(im, 0, 2047, "mvil");
     set_inst_mvil(im, I_MVIL);
   }
 
@@ -547,6 +516,7 @@ public class Asm
 
   public void as_sri(int reg_d, int reg_a)
   {
+    check_limit(reg_a, -16, 15, "sri");
     set_inst_normal(reg_d, reg_a, 1, I_SR);
   }
 
@@ -557,6 +527,7 @@ public class Asm
 
   public void as_sli(int reg_d, int reg_a)
   {
+    check_limit(reg_a, -16, 15, "sli");
     set_inst_normal(reg_d, reg_a, 1, I_SL);
   }
 
@@ -567,6 +538,7 @@ public class Asm
 
   public void as_srai(int reg_d, int reg_a)
   {
+    check_limit(reg_a, -16, 15, "srai");
     set_inst_normal(reg_d, reg_a, 1, I_SRA);
   }
 

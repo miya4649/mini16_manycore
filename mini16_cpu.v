@@ -49,6 +49,7 @@ module mini16_cpu
   localparam FFFF = {WIDTH_D{1'b1}};
   localparam SHIFT_BITS = $clog2(WIDTH_D);
   localparam BL_OFFSET = 1'd1;
+  localparam DEPTH_OPERAND = 5;
 
   // opcode
   localparam I_NOP  = 5'h00; // 5'b00000;
@@ -89,11 +90,11 @@ module mini16_cpu
 `endif
 
   // stage 1 fetch
-  reg  [WIDTH_I-1:0]   inst_s1;
-  wire [DEPTH_REG-1:0] reg_d_s1;
-  wire [DEPTH_REG-1:0] reg_a_s1;
-  wire [4:0]           op_s1;
-  wire                 is_im_s1;
+  reg  [WIDTH_I-1:0] inst_s1;
+  wire [DEPTH_OPERAND-1:0] reg_d_s1;
+  wire [DEPTH_OPERAND-1:0] reg_a_s1;
+  wire [4:0] op_s1;
+  wire is_im_s1;
   assign reg_d_s1 = inst_s1[15:11];
   assign reg_a_s1 = inst_s1[10:6];
   assign is_im_s1 = inst_s1[5];
@@ -178,14 +179,14 @@ module mini16_cpu
       begin
         always @(posedge clk)
           begin
-            reg_addr_b_s2 <= reg_a_s1;
+            reg_addr_b_s2 <= reg_a_s1[DEPTH_REG-1:0];
             if (op_s1 == I_MVC)
               begin
                 reg_addr_a_s2 <= SP_REG_CP;
               end
             else
               begin
-                reg_addr_a_s2 <= reg_d_s1;
+                reg_addr_a_s2 <= reg_d_s1[DEPTH_REG-1:0];
               end
           end
       end
@@ -194,8 +195,8 @@ module mini16_cpu
   // stage 2 delay
   reg [4:0]           op_s2;
   reg                 is_im_s2;
-  reg [DEPTH_REG-1:0] reg_d_s2;
-  reg [DEPTH_REG-1:0] reg_a_s2;
+  reg [DEPTH_OPERAND-1:0] reg_d_s2;
+  reg [DEPTH_OPERAND-1:0] reg_a_s2;
   always @(posedge clk)
     begin
       op_s2 <= op_s1;
@@ -220,7 +221,7 @@ module mini16_cpu
             end
           else
             begin
-              reg_addr_d_s3 <= reg_d_s2;
+              reg_addr_d_s3 <= reg_d_s2[DEPTH_REG-1:0];
             end
         end
     end
@@ -228,14 +229,14 @@ module mini16_cpu
   // stage 3 delay
   reg [4:0]           op_s3;
   reg                 is_im_s3;
-  reg [DEPTH_REG-1:0] reg_a_s3;
+  reg [DEPTH_OPERAND-1:0] reg_a_s3;
   always @(posedge clk)
     begin
       op_s3 <= op_s2;
       is_im_s3 <= is_im_s2;
       reg_a_s3 <= reg_a_s2;
     end
-  reg [DEPTH_REG-1:0] reg_d_s3;
+  reg [DEPTH_OPERAND-1:0] reg_d_s3;
   generate
     if (ENABLE_MVIL == TRUE)
       begin
@@ -599,8 +600,8 @@ module mini16_cpu
       end
     else
       begin
-        assign reg_file_addr_r_a = reg_d_s2;
-        assign reg_file_addr_r_b = reg_a_s2;
+        assign reg_file_addr_r_a = reg_d_s2[DEPTH_REG-1:0];
+        assign reg_file_addr_r_b = reg_a_s2[DEPTH_REG-1:0];
       end
   endgenerate
   r2w1_port_ram

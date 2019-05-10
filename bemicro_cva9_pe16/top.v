@@ -38,7 +38,24 @@ module top
    output [7:0] USER_LED
    );
 
-  localparam CORES = 170;
+  localparam TRUE = 1'b1;
+  localparam FALSE = 1'b0;
+  localparam CORES = 500;
+  localparam WIDTH_P_D = 16;
+  localparam DEPTH_P_I = 9;
+  localparam DEPTH_M2S = 4;
+  localparam DEPTH_FIFO = 3;
+  localparam VRAM_WIDTH_BITS = 6;
+  localparam VRAM_HEIGHT_BITS = 7;
+  localparam PE_REGFILE_RAM_TYPE = "distributed";
+  localparam PE_FIFO_RAM_TYPE = "distributed";
+  localparam PE_M2S_RAM_TYPE = "distributed";
+  localparam PE_DEPTH_REG = 4;
+  localparam PE_ENABLE_MVIL = TRUE;
+  localparam PE_ENABLE_MUL = FALSE;
+  localparam PE_ENABLE_MULTI_BIT_SHIFT = FALSE;
+  localparam PE_ENABLE_MVC = FALSE;
+  localparam PE_ENABLE_WA = FALSE;
   localparam UART_CLK_HZ = 100800000;
   localparam UART_SCLK_HZ = 115200;
 
@@ -115,7 +132,22 @@ module top
     #(
       .CORES (CORES),
       .UART_CLK_HZ (UART_CLK_HZ),
-      .UART_SCLK_HZ (UART_SCLK_HZ)
+      .UART_SCLK_HZ (UART_SCLK_HZ),
+      .WIDTH_P_D (WIDTH_P_D),
+      .DEPTH_P_I (DEPTH_P_I),
+      .DEPTH_M2S (DEPTH_M2S),
+      .DEPTH_FIFO (DEPTH_FIFO),
+      .VRAM_WIDTH_BITS (VRAM_WIDTH_BITS),
+      .VRAM_HEIGHT_BITS (VRAM_HEIGHT_BITS),
+      .PE_REGFILE_RAM_TYPE (PE_REGFILE_RAM_TYPE),
+      .PE_FIFO_RAM_TYPE (PE_FIFO_RAM_TYPE),
+      .PE_M2S_RAM_TYPE (PE_M2S_RAM_TYPE),
+      .PE_DEPTH_REG (PE_DEPTH_REG),
+      .PE_ENABLE_MVIL (PE_ENABLE_MVIL),
+      .PE_ENABLE_MUL (PE_ENABLE_MUL),
+      .PE_ENABLE_MULTI_BIT_SHIFT (PE_ENABLE_MULTI_BIT_SHIFT),
+      .PE_ENABLE_MVC (PE_ENABLE_MVC),
+      .PE_ENABLE_WA (PE_ENABLE_WA)
       )
   mini16_soc_0
     (

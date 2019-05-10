@@ -1,14 +1,29 @@
 EXES=main
-SRCS=$(wildcard *.v ../*.v)
+EXES16=main16
 VCDS=$(wildcard *.vcd)
 
 all: $(EXES)
 
+pe16: $(EXES16)
+
 run: $(EXES)
 	vvp $(EXES)
 
-$(EXES): $(SRCS)
-	iverilog -g2012 -Wall -o $(EXES) $(SRCS)
+run16: $(EXES16)
+	vvp $(EXES16)
+
+$(EXES): program testbench.v ../*.v
+	iverilog -g2012 -Wall -o $(EXES) testbench.v ../*.v
+
+$(EXES16): program16 testbench.v include16.v ../*.v
+	iverilog -g2012 -Wall -o $(EXES16) include16.v testbench.v ../*.v
+
+program:
+	make -C ../asm test4-32
+
+program16:
+	make -C ../asm test4-16
 
 clean:
-	rm -f $(EXES) $(VCDS)
+	make -C ../asm clean
+	rm -f $(EXES) $(EXES16) $(VCDS)

@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2019, miya
+  Copyright (c) 2018-2019, miya
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -19,31 +19,54 @@
 
 module top
   (
-   input        CLK_24MHZ,
-`ifdef USE_UART
-   output       LVDS_TX_O_N2,
-   input        LVDS_TX_O_N1,
-`endif
+   input        CLOCK_50,
+   input        RESET_N,
+   output [9:0] LEDR,
 `ifdef USE_VGA
-   output       GPIO2,
-   output       GPIO4,
-   output       GPIO6,
-   output       GPIO8,
-   output       GPIO_D,
-   output       DIFF_TX_N9,
-   output       LVDS_TX_O_P3,
-   output       LVDS_TX_O_P0,
+   output       VGA_HS,
+   output       VGA_VS,
+   output [3:0] VGA_R,
+   output [3:0] VGA_G,
+   output [3:0] VGA_B,
 `endif
-   input [1:0]  TACT,
-   output [7:0] USER_LED
+   inout [35:0] GPIO_0,
+   inout [35:0] GPIO_1
    );
 
-  localparam CORES = 170;
-  localparam UART_CLK_HZ = 100800000;
+  localparam TRUE = 1'b1;
+  localparam FALSE = 1'b0;
+  localparam CORES = 64;
+  localparam WIDTH_P_D = 16;
+  localparam DEPTH_P_I = 9;
+  localparam DEPTH_M2S = 4;
+  localparam DEPTH_FIFO = 3;
+  localparam VRAM_WIDTH_BITS = 6;
+  localparam VRAM_HEIGHT_BITS = 7;
+  localparam PE_REGFILE_RAM_TYPE = "distributed";
+  localparam PE_FIFO_RAM_TYPE = "distributed";
+  localparam PE_M2S_RAM_TYPE = "distributed";
+  localparam PE_DEPTH_REG = 4;
+  localparam PE_ENABLE_MVIL = TRUE;
+  localparam PE_ENABLE_MUL = FALSE;
+  localparam PE_ENABLE_MULTI_BIT_SHIFT = FALSE;
+  localparam PE_ENABLE_MVC = FALSE;
+  localparam PE_ENABLE_WA = FALSE;
+  localparam UART_CLK_HZ = 140000000;
   localparam UART_SCLK_HZ = 115200;
 
+  // unused GPIO
+  assign GPIO_0[29:0] = 30'bz;
+  assign GPIO_0[31] = 1'bz;
+  assign GPIO_0[35:33] = 3'bz;
+  assign GPIO_1[35:0] = 36'bz;
+
+`ifndef USE_UART
+  assign GPIO_0[30] = 1'bz;
+  assign GPIO_0[32] = 1'bz;
+`endif
+
   wire [15:0]   led;
-  assign USER_LED = ~led;
+  assign LEDR = led;
 
   // generate reset signal (push button 1)
   reg  reset;
@@ -51,9 +74,9 @@ module top
   reg  resetpll;
   reg  resetpll1;
 
-  always @(posedge CLK_24MHZ)
+  always @(posedge CLOCK_50)
     begin
-      resetpll1 <= ~TACT[0];
+      resetpll1 <= ~RESET_N;
       resetpll <= resetpll1;
     end
 
@@ -71,28 +94,24 @@ module top
   // uart
   wire uart_txd;
   wire uart_rxd;
-  assign LVDS_TX_O_N2 = uart_txd;
-  assign uart_rxd = LVDS_TX_O_N1;
+  assign GPIO_0[30] = uart_txd;
+  assign uart_rxd = GPIO_0[32];
+  // input only
+  assign GPIO_0[32] = 1'bz;
 `endif
 
 `ifdef USE_VGA
-  wire   clkv;
-  reg    resetv;
-  reg    resetv1;
-  // VGA port
-  wire   VGA_R_in;
-  wire   VGA_G_in;
-  wire   VGA_B_in;
-  wire   VGA_HS;
-  wire   VGA_VS;
-  assign GPIO2 = VGA_R_in;
-  assign GPIO4 = VGA_R_in;
-  assign GPIO6 = VGA_G_in;
-  assign GPIO8 = VGA_G_in;
-  assign GPIO_D = VGA_B_in;
-  assign DIFF_TX_N9 = VGA_B_in;
-  assign LVDS_TX_O_P3 = VGA_HS;
-  assign LVDS_TX_O_P0 = VGA_VS;
+  wire clkv;
+  reg  resetv;
+  reg  resetv1;
+  // truncate RGB data
+  wire VGA_R_in;
+  wire VGA_G_in;
+  wire VGA_B_in;
+  assign VGA_R = {4{VGA_R_in}};
+  assign VGA_G = {4{VGA_G_in}};
+  assign VGA_B = {4{VGA_B_in}};
+
   always @(posedge clkv)
     begin
       resetv1 <= ~pll_locked;
@@ -102,12 +121,13 @@ module top
 
   av_pll2_0002 av_pll2_0002_0
     (
-     .refclk (CLK_24MHZ),
+     .refclk (CLOCK_50),
      .rst (resetpll),
      .outclk_0 (clk),
 `ifdef USE_VGA
      .outclk_1 (clkv),
 `endif
+     .outclk_2 (),
      .locked (pll_locked)
      );
 
@@ -115,7 +135,22 @@ module top
     #(
       .CORES (CORES),
       .UART_CLK_HZ (UART_CLK_HZ),
-      .UART_SCLK_HZ (UART_SCLK_HZ)
+      .UART_SCLK_HZ (UART_SCLK_HZ),
+      .WIDTH_P_D (WIDTH_P_D),
+      .DEPTH_P_I (DEPTH_P_I),
+      .DEPTH_M2S (DEPTH_M2S),
+      .DEPTH_FIFO (DEPTH_FIFO),
+      .VRAM_WIDTH_BITS (VRAM_WIDTH_BITS),
+      .VRAM_HEIGHT_BITS (VRAM_HEIGHT_BITS),
+      .PE_REGFILE_RAM_TYPE (PE_REGFILE_RAM_TYPE),
+      .PE_FIFO_RAM_TYPE (PE_FIFO_RAM_TYPE),
+      .PE_M2S_RAM_TYPE (PE_M2S_RAM_TYPE),
+      .PE_DEPTH_REG (PE_DEPTH_REG),
+      .PE_ENABLE_MVIL (PE_ENABLE_MVIL),
+      .PE_ENABLE_MUL (PE_ENABLE_MUL),
+      .PE_ENABLE_MULTI_BIT_SHIFT (PE_ENABLE_MULTI_BIT_SHIFT),
+      .PE_ENABLE_MVC (PE_ENABLE_MVC),
+      .PE_ENABLE_WA (PE_ENABLE_WA)
       )
   mini16_soc_0
     (

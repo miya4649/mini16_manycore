@@ -15,48 +15,94 @@
 
 public class AsmLib extends Asm
 {
-  public static final boolean ENABLE_WA = true;
+  public int DEPTH_REG;
 
-  public static final int CORES = 32;
+  public int CORES;
+  public int PARALLEL;
+  public int ENABLE_MVIL;
+  public int ENABLE_MUL;
+  public int ENABLE_MVC;
+  public int ENABLE_WA;
+  public int ENABLE_UART;
+  public int ENABLE_MULTI_BIT_SHIFT;
 
-  public static final int WIDTH_I = 16;
-  public static final int DEPTH_REG = 5;
-  public static final int DEPTH_IO_REG = 5;
-  public static final int WIDTH_M_D = 32;
-  public static final int WIDTH_P_D = 32;
-  public static final int DEPTH_M_I = 11;
-  public static final int DEPTH_M_D = 11;
-  public static final int DEPTH_P_I = 10;
-  public static final int DEPTH_P_D = 8;
-  public static final int DEPTH_M2S = 8;
-  public static final int DEPTH_S2M = 8;
-  public static final int DEPTH_U2M = 11;
-  public static final int WIDTH_VRAM = 3;
-  public static final int DEPTH_VRAM = 17;
-  public static final int DEPTH_B_U = Integer.max(DEPTH_M_I, DEPTH_U2M);
-  public static final int DEPTH_V_U = (DEPTH_B_U + 2);
-  // $clog2(N) == (32 - Integer.numberOfLeadingZeros(N - 1))
-  public static final int CORE_BITS = (32 - Integer.numberOfLeadingZeros((CORES + 6) - 1));
-  public static final int DEPTH_B_F = Integer.max(DEPTH_VRAM, DEPTH_S2M);
-  public static final int DEPTH_V_F = (DEPTH_B_F + 1);
-  public static final int DEPTH_B_M2S = Integer.max(DEPTH_P_I, DEPTH_M2S);
-  public static final int DEPTH_V_M2S = (DEPTH_B_M2S + 1);
-  public static final int DEPTH_B_M_W = Integer.max(DEPTH_V_M2S, Integer.max(DEPTH_M_D, DEPTH_IO_REG));
-  public static final int DEPTH_V_M_W = (DEPTH_B_M_W + CORE_BITS);
-  public static final int DEPTH_B_M_R = Integer.max(DEPTH_M_D, Integer.max(DEPTH_IO_REG, Integer.max(DEPTH_U2M, DEPTH_S2M)));
-  public static final int DEPTH_V_M_R = (DEPTH_B_M_R + 2);
-  public static final int DEPTH_B_S_R = Integer.max(DEPTH_P_D, DEPTH_M2S);
-  public static final int DEPTH_V_S_R = (DEPTH_B_S_R + 2);
-  public static final int DEPTH_B_S_W = Integer.max(DEPTH_V_F, DEPTH_P_D);
-  public static final int DEPTH_V_S_W = (DEPTH_B_S_W + 1);
-  public static final int PE_ID_START = 4;
+  public int WIDTH_I;
+  public int DEPTH_IO_REG;
+  public int WIDTH_M_D;
+  public int WIDTH_P_D;
+  public int DEPTH_M_I;
+  public int DEPTH_M_D;
+  public int DEPTH_P_I;
+  public int DEPTH_P_D;
+  public int DEPTH_M2S;
+  public int DEPTH_S2M;
+  public int DEPTH_U2M;
+  public int IMAGE_WIDTH_BITS;
+  public int IMAGE_HEIGHT_BITS;
+  public int DEPTH_VRAM;
+  public int DEPTH_B_U;
+  public int DEPTH_V_U;
+  public int CORE_BITS;
+  public int DEPTH_B_F;
+  public int DEPTH_V_F;
+  public int DEPTH_B_M2S;
+  public int DEPTH_V_M2S;
+  public int DEPTH_B_M_W;
+  public int DEPTH_V_M_W;
+  public int DEPTH_B_M_R;
+  public int DEPTH_V_M_R;
+  public int DEPTH_B_S_R;
+  public int DEPTH_V_S_R;
+  public int DEPTH_B_S_W;
+  public int DEPTH_V_S_W;
+  public int PE_ID_START;
 
-  public static final int REGS = (1 << DEPTH_REG);
+  public int M2S_BANK_M2S;
+  public int M2S_BANK_MEM_I;
+  public int PE_W_BANK_MEM_D;
+  public int PE_W_BANK_FIFO;
+  public int PE_R_BANK_MEM_D;
+  public int PE_R_BANK_M2S;
+  public int PE_R_BANK_ITEM_COUNT;
+
+  public int MASTER_W_BANK_BC;
+  public int MASTER_W_BANK_MEM_D;
+  public int MASTER_W_BANK_IO_REG;
+  public int MASTER_R_BANK_MEM_D;
+  public int MASTER_R_BANK_IO_REG;
+  public int MASTER_R_BANK_U2M;
+  public int MASTER_R_BANK_S2M;
+  public int UART_IO_ADDR_RESET;
+  public int UART_BANK_MEM_I;
+  public int UART_BANK_U2M;
+  public int FIFO_BANK_S2M;
+  public int FIFO_BANK_VRAM;
+  public int IO_REG_R_UART_BUSY;
+  public int IO_REG_R_VGA_VSYNC;
+  public int IO_REG_R_VGA_VCOUNT;
+  public int IO_REG_W_RESET_PE;
+  public int IO_REG_W_LED;
+  public int IO_REG_W_UART;
+  public int IO_REG_W_SPRITE_X;
+  public int IO_REG_W_SPRITE_Y;
+  public int IO_REG_W_SPRITE_SCALE;
+
+  public int REGS;
+  public int SP_REG_STACK_POINTER;
+
+  public int LREG0;
+  public int LREG1;
+  public int LREG2;
+  public int LREG3;
+  public int LREG4;
+  public int LREG5;
+  public int LREG6;
+
+  public int STACK_ADDRESS;
 
   public static final int SP_REG_CP = 0;
   public static final int SP_REG_MVIL = 1;
   public static final int SP_REG_LINK = 2;
-  public static final int SP_REG_STACK_POINTER = (REGS - 1);
 
   public static final int R3 = 3;
   public static final int R4 = 4;
@@ -64,56 +110,121 @@ public class AsmLib extends Asm
   public static final int R6 = 6;
   public static final int R7 = 7;
 
-  public static final int LREG0 = 24;
-  public static final int LREG1 = 25;
-  public static final int LREG2 = 26;
-  public static final int LREG3 = 27;
-  public static final int LREG4 = 28;
-  public static final int LREG5 = 29;
-  public static final int LREG6 = 30;
-
   public static final int WAIT_DELAYSLOT = 5;
   public static final int WAIT_DEPENDENCY = 5;
 
-  public static final int M2S_BANK_M2S = 0;
-  public static final int M2S_BANK_MEM_I = 1;
-  public static final int PE_W_BANK_MEM_D = 0;
-  public static final int PE_W_BANK_FIFO = 1;
-  public static final int PE_R_BANK_MEM_D = 0;
-  public static final int PE_R_BANK_M2S = 1;
-  public static final int PE_R_BANK_ITEM_COUNT = 2;
-
-  public static final int MASTER_W_BANK_BC = ((1 << CORE_BITS) - 1);
-  public static final int MASTER_W_BANK_MEM_D = 0;
-  public static final int MASTER_W_BANK_IO_REG = 1;
-  public static final int MASTER_R_BANK_MEM_D = 0;
-  public static final int MASTER_R_BANK_IO_REG = 1;
-  public static final int MASTER_R_BANK_U2M = 2;
-  public static final int MASTER_R_BANK_S2M = 3;
-  public static final int UART_IO_ADDR_RESET = ((1 << DEPTH_B_U) + 0);
-  public static final int UART_BANK_MEM_I = 0;
-  public static final int UART_BANK_U2M = 2;
-  public static final int FIFO_BANK_S2M = 0;
-  public static final int FIFO_BANK_VRAM = 1;
-  public static final int IO_REG_R_UART_BUSY = 0;
-  public static final int IO_REG_R_VGA_VSYNC = 1;
-  public static final int IO_REG_R_VGA_VCOUNT = 2;
-  public static final int IO_REG_W_RESET_PE = 0;
-  public static final int IO_REG_W_LED = 1;
-  public static final int IO_REG_W_UART = 2;
-  public static final int IO_REG_W_SPRITE_X = 3;
-  public static final int IO_REG_W_SPRITE_Y = 4;
-  public static final int IO_REG_W_SPRITE_SCALE = 5;
-
   public static final int MVIL_ADDR_LIMIT = 0x800;
 
-  public static final int DEFAULT_DEPTH_D = 8;
-  public int stackAddress = ((1 << DEFAULT_DEPTH_D) - 1);
+  public GetOpt opts;
 
-  // set default stack address
-  public void set_stack_address(int addr)
+  public void init(String[] args)
   {
-    stackAddress = addr;
+    // init: must be implemented in sub-classes
+    opts = new GetOpt();
+    opts.setArgs(args);
+    opts.setDefault("cores", 32);
+    opts.setDefault("width_p_d", 32);
+    opts.setDefault("depth_p_i", 10);
+    opts.setDefault("depth_m2s", 8);
+    opts.setDefault("image_width_bits", 8);
+    opts.setDefault("image_height_bits", 8);
+    opts.setDefault("vram_width_bits", 8);
+    opts.setDefault("vram_height_bits", 9);
+    opts.setDefault("pe_depth_reg", 5);
+    opts.setDefault("pe_enable_mvil", 1);
+    opts.setDefault("pe_enable_mul", 1);
+    opts.setDefault("pe_enable_mvc", 1);
+    opts.setDefault("pe_enable_wa", 1);
+    opts.setDefault("lreg_start", 24);
+    opts.setDefault("enable_uart", 1);
+    opts.setDefault("pe_enable_multi_bit_shift", 1);
+
+    DEPTH_REG = 5;
+
+    CORES = opts.getIntValue("cores");
+    PARALLEL = CORES;
+    // always 1 on the master core
+    ENABLE_MVIL = 1;
+    ENABLE_MUL = 1;
+    ENABLE_MVC = 1;
+    ENABLE_WA = 1;
+    ENABLE_MULTI_BIT_SHIFT = 1;
+    ENABLE_UART = opts.getIntValue("enable_uart");
+
+    WIDTH_I = 16;
+    DEPTH_IO_REG = 5;
+    WIDTH_M_D = 32;
+    WIDTH_P_D = opts.getIntValue("width_p_d");
+    DEPTH_M_I = 11;
+    DEPTH_M_D = 11;
+    DEPTH_P_I = opts.getIntValue("depth_p_i");
+    DEPTH_P_D = 8;
+    DEPTH_M2S = opts.getIntValue("depth_m2s");
+    DEPTH_S2M = 9;
+    DEPTH_U2M = 11;
+    IMAGE_WIDTH_BITS = opts.getIntValue("image_width_bits");
+    IMAGE_HEIGHT_BITS = opts.getIntValue("image_height_bits");
+    DEPTH_VRAM = opts.getIntValue("vram_width_bits") + opts.getIntValue("vram_height_bits");
+    DEPTH_B_U = Integer.max(DEPTH_M_I, DEPTH_U2M);
+    DEPTH_V_U = (DEPTH_B_U + 2);
+    // $clog2(N) == (32 - Integer.numberOfLeadingZeros(N - 1))
+    CORE_BITS = (32 - Integer.numberOfLeadingZeros((CORES + 6) - 1));
+    DEPTH_B_F = Integer.max(DEPTH_VRAM, DEPTH_S2M);
+    DEPTH_V_F = (DEPTH_B_F + 1);
+    DEPTH_B_M2S = Integer.max(DEPTH_P_I, DEPTH_M2S);
+    DEPTH_V_M2S = (DEPTH_B_M2S + 1);
+    DEPTH_B_M_W = Integer.max(DEPTH_V_M2S, Integer.max(DEPTH_M_D, DEPTH_IO_REG));
+    DEPTH_V_M_W = (DEPTH_B_M_W + CORE_BITS);
+    DEPTH_B_M_R = Integer.max(DEPTH_M_D, Integer.max(DEPTH_IO_REG, Integer.max(DEPTH_U2M, DEPTH_S2M)));
+    DEPTH_V_M_R = (DEPTH_B_M_R + 2);
+    DEPTH_B_S_R = Integer.max(DEPTH_P_D, DEPTH_M2S);
+    DEPTH_V_S_R = (DEPTH_B_S_R + 2);
+    DEPTH_B_S_W = Integer.max(DEPTH_V_F, DEPTH_P_D);
+    DEPTH_V_S_W = (DEPTH_B_S_W + 1);
+    PE_ID_START = 4;
+
+    M2S_BANK_M2S = 0;
+    M2S_BANK_MEM_I = 1;
+    PE_W_BANK_MEM_D = 0;
+    PE_W_BANK_FIFO = 1;
+    PE_R_BANK_MEM_D = 0;
+    PE_R_BANK_M2S = 1;
+    PE_R_BANK_ITEM_COUNT = 2;
+
+    MASTER_W_BANK_BC = ((1 << CORE_BITS) - 1);
+    MASTER_W_BANK_MEM_D = 0;
+    MASTER_W_BANK_IO_REG = 1;
+    MASTER_R_BANK_MEM_D = 0;
+    MASTER_R_BANK_IO_REG = 1;
+    MASTER_R_BANK_U2M = 2;
+    MASTER_R_BANK_S2M = 3;
+    UART_IO_ADDR_RESET = ((1 << DEPTH_B_U) + 0);
+    UART_BANK_MEM_I = 0;
+    UART_BANK_U2M = 2;
+    FIFO_BANK_S2M = 0;
+    FIFO_BANK_VRAM = 1;
+    IO_REG_R_UART_BUSY = 0;
+    IO_REG_R_VGA_VSYNC = 1;
+    IO_REG_R_VGA_VCOUNT = 2;
+    IO_REG_W_RESET_PE = 0;
+    IO_REG_W_LED = 1;
+    IO_REG_W_UART = 2;
+    IO_REG_W_SPRITE_X = 3;
+    IO_REG_W_SPRITE_Y = 4;
+    IO_REG_W_SPRITE_SCALE = 5;
+
+    REGS = (1 << DEPTH_REG);
+    SP_REG_STACK_POINTER = (REGS - 1);
+
+    LREG0 = 24;
+    LREG1 = 25;
+    LREG2 = 26;
+    LREG3 = 27;
+    LREG4 = 28;
+    LREG5 = 29;
+    LREG6 = 30;
+
+    STACK_ADDRESS = ((1 << DEPTH_M_D) - 1);
   }
 
   // jump to label
@@ -125,9 +236,7 @@ public class AsmLib extends Asm
     {
       print_error("lib_ba: exceed address limit");
     }
-    lib_wait_dep_pre();
-    as_mvil(addr);
-    lib_wait_dep_post();
+    lib_mvil(addr);
     lib_wait_ds_pre();
     as_ba(SP_REG_MVIL);
     lib_wait_ds_post();
@@ -142,9 +251,7 @@ public class AsmLib extends Asm
     {
       print_error("lib_bc: exceed address limit");
     }
-    lib_wait_dep_pre();
-    as_mvil(addr);
-    lib_wait_dep_post();
+    lib_mvil(addr);
     lib_wait_ds_pre();
     as_bc(SP_REG_CP, SP_REG_MVIL);
     lib_wait_ds_post();
@@ -159,9 +266,7 @@ public class AsmLib extends Asm
     {
       print_error("lib_call: exceed address limit");
     }
-    lib_wait_dep_pre();
-    as_mvil(addr);
-    lib_wait_dep_post();
+    lib_mvil(addr);
     lib_wait_ds_pre();
     as_bl(SP_REG_LINK, SP_REG_MVIL);
     lib_wait_ds_post();
@@ -170,9 +275,7 @@ public class AsmLib extends Asm
   // initialize stack
   public void lib_init_stack()
   {
-    lib_wait_dep_pre();
-    as_mvil(stackAddress);
-    lib_wait_dep_post();
+    lib_mvil(STACK_ADDRESS);
     lib_wait_dep_pre();
     as_mv(SP_REG_STACK_POINTER, SP_REG_MVIL);
     lib_wait_dep_post();
@@ -186,10 +289,16 @@ public class AsmLib extends Asm
     {
       print_error("lib_ld: exceed address limit");
     }
-    lib_wait_dep_pre();
-    as_mvil(addr);
-    lib_wait_dep_post();
+    lib_mvil(addr);
     as_ld(reg, SP_REG_MVIL);
+  }
+
+  // MVIL wrapper
+  public void lib_mvil(int value)
+  {
+    lib_wait_dep_pre();
+    as_mvil(value);
+    lib_wait_dep_post();
   }
 
   // store with label
@@ -200,9 +309,7 @@ public class AsmLib extends Asm
     {
       print_error("lib_st: exceed address limit");
     }
-    lib_wait_dep_pre();
-    as_mvil(addr);
-    lib_wait_dep_post();
+    lib_mvil(addr);
     as_st(SP_REG_MVIL, reg);
   }
 
@@ -327,16 +434,16 @@ public class AsmLib extends Asm
   // Reg[reg] = value (11bit)
   public void lib_set_im(int reg, int value)
   {
+    lib_mvil(value);
     lib_wait_dep_pre();
-    as_mvil(value);
-    lib_wait_dep_post();
     as_mv(reg, SP_REG_MVIL);
+    lib_wait_dep_post();
   }
 
   // wait: delay_slot
   public void lib_wait_ds_pre()
   {
-    if (ENABLE_WA == true)
+    if (ENABLE_WA == 1)
     {
       as_wa(WAIT_DELAYSLOT);
     }
@@ -345,7 +452,7 @@ public class AsmLib extends Asm
   // wait: delay_slot
   public void lib_wait_ds_post()
   {
-    if (ENABLE_WA != true)
+    if (ENABLE_WA != 1)
     {
       lib_nop(WAIT_DELAYSLOT);
     }
@@ -354,7 +461,7 @@ public class AsmLib extends Asm
   // wait: dependency
   public void lib_wait_dep_pre()
   {
-    if (ENABLE_WA == true)
+    if (ENABLE_WA == 1)
     {
       as_wa(WAIT_DEPENDENCY);
     }
@@ -363,7 +470,7 @@ public class AsmLib extends Asm
   // wait: dependency
   public void lib_wait_dep_post()
   {
-    if (ENABLE_WA != true)
+    if (ENABLE_WA != 1)
     {
       lib_nop(WAIT_DEPENDENCY);
     }
@@ -372,7 +479,7 @@ public class AsmLib extends Asm
   // wait: delay_slot
   public void lib_wait_delay_slot()
   {
-    if (ENABLE_WA != true)
+    if (ENABLE_WA == 1)
     {
       as_wa(WAIT_DELAYSLOT - 1);
       as_nop();
@@ -386,7 +493,7 @@ public class AsmLib extends Asm
   // wait: dependency
   public void lib_wait_dependency()
   {
-    if (ENABLE_WA != true)
+    if (ENABLE_WA == 1)
     {
       as_wa(WAIT_DEPENDENCY - 1);
       as_nop();
@@ -544,9 +651,6 @@ public class AsmLib extends Asm
     int seed_addr = LREG2;
     lib_set_im(seed_addr, addr_abs("d_rand"));
     lib_set_im(const17, 17);
-    lib_wait_dep_pre();
-    as_nop();
-    lib_wait_dep_post();
     as_ld(rand0, seed_addr);
     lib_wait_dep_pre();
     as_ld(rand1, seed_addr);
@@ -576,6 +680,54 @@ public class AsmLib extends Asm
     as_xor(rand0, rand1);
     lib_wait_dep_post();
     as_st(seed_addr, rand0);
+  }
+
+  public void lib_sl(int reg_d, int reg_a)
+  {
+    if (ENABLE_MULTI_BIT_SHIFT == 1)
+    {
+      as_sl(reg_d, reg_a);
+    }
+    else
+    {
+      as_mv(LREG5, reg_d);
+      as_mv(LREG6, reg_a);
+      lib_call("f_lib_sl");
+      as_mv(reg_d, LREG5);
+    }
+  }
+
+  public void lib_sli(int reg_d, int shift_width)
+  {
+    if (ENABLE_MULTI_BIT_SHIFT == 1)
+    {
+      as_sli(reg_d, shift_width);
+    }
+    else
+    {
+      as_mv(LREG5, reg_d);
+      as_mvi(LREG6, shift_width);
+      lib_call("f_lib_sl");
+      as_mv(reg_d, LREG5);
+    }
+  }
+
+  public void f_lib_sl()
+  {
+    // sl for 1bit-shift
+    // input
+    // LREG5: input value
+    // LREG6: shift width
+    // output
+    // LREG5: result
+    label("f_lib_sl");
+    as_sli(LREG5, 1);
+    lib_wait_dep_pre();
+    as_subi(LREG6, 1);
+    lib_wait_dep_post();
+    as_cnz(SP_REG_CP, LREG6);
+    lib_bc("f_lib_sl");
+    lib_return();
   }
 
   public void f_uart_char()
@@ -668,9 +820,6 @@ public class AsmLib extends Asm
     lib_push_regs(R4, 3);
     as_mv(R4, R3);
     lib_set_im(R5, 28);
-    lib_wait_dep_pre();
-    as_nop();
-    lib_wait_dep_post();
     label("f_uart_hex_word_L_0");
     lib_wait_dep_pre();
     as_mv(R6, R4);

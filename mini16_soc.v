@@ -26,13 +26,22 @@ module mini16_soc
     parameter DEPTH_P_D = 8,
     parameter DEPTH_M2S = 8,
     parameter DEPTH_FIFO = 4,
-    parameter DEPTH_S2M = 8,
+    parameter DEPTH_S2M = 9,
     parameter DEPTH_U2M = 11,
-    parameter WIDTH_VRAM = 3,
-    parameter DEPTH_VRAM = 17,
+    parameter VRAM_BPP = 3,
+    parameter VRAM_BPC = 1,
+    parameter VRAM_WIDTH_BITS = 8,
+    parameter VRAM_HEIGHT_BITS = 9,
     parameter MASTER_REGFILE_RAM_TYPE = "auto",
     parameter PE_REGFILE_RAM_TYPE = "auto",
-    parameter PE_FIFO_RAM_TYPE = "auto"
+    parameter PE_FIFO_RAM_TYPE = "distributed",
+    parameter PE_M2S_RAM_TYPE = "auto",
+    parameter PE_DEPTH_REG = 5,
+    parameter PE_ENABLE_MVIL = 1'b1,
+    parameter PE_ENABLE_MUL = 1'b1,
+    parameter PE_ENABLE_MULTI_BIT_SHIFT = 1'b1,
+    parameter PE_ENABLE_MVC = 1'b1,
+    parameter PE_ENABLE_WA = 1'b1
     )
   (
    input  clk,
@@ -56,6 +65,7 @@ module mini16_soc
   localparam WIDTH_I = 16;
   localparam DEPTH_REG = 5;
   localparam DEPTH_IO_REG = 5;
+  localparam DEPTH_VRAM = (VRAM_WIDTH_BITS + VRAM_HEIGHT_BITS);
   localparam DEPTH_B_U = max(DEPTH_M_I, DEPTH_U2M);
   localparam DEPTH_V_U = (DEPTH_B_U + 2);
   localparam CORE_BITS = $clog2(CORES + 6);
@@ -415,8 +425,8 @@ module mini16_soc
 
   sprite
    #(
-    .SPRITE_WIDTH_BITS (8),
-    .SPRITE_HEIGHT_BITS (9),
+    .SPRITE_WIDTH_BITS (VRAM_WIDTH_BITS),
+    .SPRITE_HEIGHT_BITS (VRAM_HEIGHT_BITS),
     .BPP (SPRITE_BPP)
     )
   sprite_0
@@ -425,7 +435,7 @@ module mini16_soc
      .reset (reset),
      .bitmap_length (),
      .bitmap_address (s2m_w_addr[DEPTH_VRAM-1:0]),
-     .bitmap_din (s2m_w_data[WIDTH_VRAM-1:0]),
+     .bitmap_din (s2m_w_data[VRAM_BPP-1:0]),
      .bitmap_dout (),
      .bitmap_we (vram_we),
      .bitmap_oe (FALSE),
@@ -441,8 +451,8 @@ module mini16_soc
 
   vga_iface
    #(
-    .BPP (3),
-    .BPC (1)
+    .BPP (VRAM_BPP),
+    .BPC (VRAM_BPC)
     )
   vga_iface_0
     (
@@ -589,7 +599,14 @@ module mini16_soc
                .DEPTH_V_M2S (DEPTH_V_M2S),
                .DEPTH_B_M2S (DEPTH_B_M2S),
                .FIFO_RAM_TYPE (PE_FIFO_RAM_TYPE),
-               .REGFILE_RAM_TYPE (PE_REGFILE_RAM_TYPE)
+               .REGFILE_RAM_TYPE (PE_REGFILE_RAM_TYPE),
+               .M2S_RAM_TYPE (PE_M2S_RAM_TYPE),
+               .DEPTH_REG (PE_DEPTH_REG),
+               .ENABLE_MVIL (PE_ENABLE_MVIL),
+               .ENABLE_MUL (PE_ENABLE_MUL),
+               .ENABLE_MULTI_BIT_SHIFT (PE_ENABLE_MULTI_BIT_SHIFT),
+               .ENABLE_MVC (PE_ENABLE_MVC),
+               .ENABLE_WA (PE_ENABLE_WA)
                )
         mini16_pe_0
              (

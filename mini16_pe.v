@@ -33,7 +33,14 @@ module mini16_pe
     parameter DEPTH_V_M2S = 9,
     parameter DEPTH_B_M2S = 8,
     parameter FIFO_RAM_TYPE = "auto",
-    parameter REGFILE_RAM_TYPE = "auto"
+    parameter REGFILE_RAM_TYPE = "auto",
+    parameter M2S_RAM_TYPE = "auto",
+    parameter DEPTH_REG = 5,
+    parameter ENABLE_MVIL = 1'b1,
+    parameter ENABLE_MUL = 1'b1,
+    parameter ENABLE_MULTI_BIT_SHIFT = 1'b1,
+    parameter ENABLE_MVC = 1'b1,
+    parameter ENABLE_WA = 1'b1
     )
   (
    input                          clk,
@@ -48,7 +55,6 @@ module mini16_pe
    );
 
   localparam WIDTH_I = 16;
-  localparam DEPTH_REG = 5;
   localparam TRUE = 1'b1;
   localparam FALSE = 1'b0;
   localparam ONE = 1'd1;
@@ -170,11 +176,11 @@ module mini16_pe
       .DEPTH_I (DEPTH_I),
       .DEPTH_D (DEPTH_V_S_W),
       .DEPTH_REG (DEPTH_REG),
-      .ENABLE_MVIL (TRUE),
-      .ENABLE_MUL (TRUE),
-      .ENABLE_MULTI_BIT_SHIFT (TRUE),
-      .ENABLE_MVC (TRUE),
-      .ENABLE_WA (TRUE),
+      .ENABLE_MVIL (ENABLE_MVIL),
+      .ENABLE_MUL (ENABLE_MUL),
+      .ENABLE_MULTI_BIT_SHIFT (ENABLE_MULTI_BIT_SHIFT),
+      .ENABLE_MVC (ENABLE_MVC),
+      .ENABLE_WA (ENABLE_WA),
       .ENABLE_INT (TRUE),
       .FULL_PIPELINED_ALU (FALSE),
       .REGFILE_RAM_TYPE (REGFILE_RAM_TYPE)
@@ -226,7 +232,8 @@ module mini16_pe
   rw_port_ram
     #(
       .DATA_WIDTH (WIDTH_D),
-      .ADDR_WIDTH (DEPTH_M2S)
+      .ADDR_WIDTH (DEPTH_M2S),
+      .RAM_TYPE (M2S_RAM_TYPE)
       )
   shared_m2s
     (

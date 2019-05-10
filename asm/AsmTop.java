@@ -21,8 +21,8 @@ public class AsmTop
 
   public static void main(String[] args)
   {
-    mp.do_asm();
-    pp.do_asm();
-    bp.do_asm();
+    mp.do_asm(args);
+    pp.do_asm(args);
+    bp.do_asm(args);
   }
 }

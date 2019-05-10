@@ -17,13 +17,6 @@ import java.lang.Math;
 
 public class BootProgram extends AsmLib
 {
-  private static final int CODE_ROM_WIDTH = 16;
-  private static final int DATA_ROM_WIDTH = 32;
-  private static final int CODE_ROM_DEPTH = 11;
-  private static final int DATA_ROM_DEPTH = 11;
-
-  private static final int PE_CODE_DEPTH = 9;
-
   public void f_program_loader()
   {
     // input: R3:data_offset R4:data_size
@@ -51,12 +44,13 @@ public class BootProgram extends AsmLib
     } while (size != 0)
     mem[addr_reset] = 0;
     */
-    int size = LREG0;
-    int addr_pe = LREG1;
-    int addr_u2m = LREG2;
-    int data = LREG3;
-    int addr_memi = LREG4;
-    int addr_reset = LREG5;
+    int size = 5;
+    int addr_pe = 6;
+    int addr_u2m = 7;
+    int data = 8;
+    int addr_memi = 9;
+    int addr_reset = 10;
+
     label("f_program_loader");
     lib_push(SP_REG_LINK);
     lib_wait_dep_pre();
@@ -69,13 +63,10 @@ public class BootProgram extends AsmLib
     as_addi(addr_reset, IO_REG_W_RESET_PE);
     lib_wait_dep_post();
     as_sti(addr_reset, 1);
-    as_add(size, R4);
+    as_mv(size, R4);
     as_mvi(addr_memi, M2S_BANK_MEM_I);
     as_mvi(addr_u2m, MASTER_R_BANK_U2M);
     lib_set_im(addr_pe, MASTER_W_BANK_BC);
-    lib_wait_dep_pre();
-    as_nop();
-    lib_wait_dep_post();
     as_sli(addr_memi, DEPTH_B_M2S);
     as_sli(addr_u2m, DEPTH_B_U);
     lib_wait_dep_pre();
@@ -86,8 +77,9 @@ public class BootProgram extends AsmLib
     label("f_program_loader_L_0");
     as_ld(data, addr_u2m);
     as_subi(size, 1);
+    lib_wait_dep_pre();
     as_addi(addr_u2m, 1);
-    lib_nop(3);
+    lib_wait_dep_post();
     as_st(addr_pe, data);
     as_cnz(SP_REG_CP, size);
     as_addi(addr_pe, 1);
@@ -98,24 +90,25 @@ public class BootProgram extends AsmLib
   }
 
   @Override
-  public void init()
+  public void init(String[] args)
   {
-    set_rom_width(CODE_ROM_WIDTH, DATA_ROM_WIDTH);
-    set_rom_depth(CODE_ROM_DEPTH, DATA_ROM_DEPTH);
-    set_stack_address((1 << DATA_ROM_DEPTH) - 1);
-    set_filename("boot");
+    super.init(args);
   }
 
   @Override
   public void program()
   {
+    set_filename("boot_code");
+    set_rom_width(WIDTH_I);
+    set_rom_depth(DEPTH_M_I);
     // load PE code
     as_nop();
     lib_init_stack();
     as_mvi(R4, 1);
+    lib_wait_dep_pre();
     as_mvi(R3, 0);
-    lib_wait_dependency();
-    as_sli(R4, PE_CODE_DEPTH);
+    lib_wait_dep_post();
+    as_sli(R4, DEPTH_P_I);
     lib_call("f_program_loader");
     lib_call("f_halt");
     // link library
@@ -126,6 +119,9 @@ public class BootProgram extends AsmLib
   @Override
   public void data()
   {
+    set_filename("boot_data");
+    set_rom_width(WIDTH_M_D);
+    set_rom_depth(DEPTH_M_D);
     dat(0);
   }
 }

@@ -75,8 +75,7 @@ module top
     #(
       .CORES (CORES),
       .UART_CLK_HZ (UART_CLK_HZ),
-      .UART_SCLK_HZ (UART_SCLK_HZ),
-      .PE_FIFO_RAM_TYPE ("distributed")
+      .UART_SCLK_HZ (UART_SCLK_HZ)
       )
   mini16_soc_0
     (

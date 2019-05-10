@@ -17,26 +17,20 @@ import java.lang.Math;
 
 public class MasterProgram extends AsmLib
 {
-  private static final int PARALLEL = 32;
+  private int DEBUG = 0;
+  private int WAIT_VSYNC = 0;
+  private int VGA_HEIGHT_BITS = 9;
 
-  private static final int CODE_ROM_WIDTH = 16;
-  private static final int DATA_ROM_WIDTH = 32;
-  private static final int CODE_ROM_DEPTH = 11;
-  private static final int DATA_ROM_DEPTH = 11;
-
-  private static final int M2S_BC_ADDR_H = ((MASTER_W_BANK_BC << (DEPTH_B_M_W - DEPTH_B_M2S)) + M2S_BANK_M2S);
-  private static final int M2S_BC_ADDR_SHIFT = DEPTH_B_M2S;
-  private static final int S2M_ADDR_H = MASTER_R_BANK_S2M;
-  private static final int S2M_ADDR_SHIFT = DEPTH_B_M_R;
-  private static final int U2M_ADDR_H = MASTER_R_BANK_U2M;
-  private static final int U2M_ADDR_SHIFT = DEPTH_B_M_R;
-  private static final int IO_REG_W_ADDR_H = MASTER_W_BANK_IO_REG;
-  private static final int IO_REG_W_ADDR_SHIFT = DEPTH_B_M_W;
-  private static final int IO_REG_R_ADDR_H = MASTER_R_BANK_IO_REG;
-  private static final int IO_REG_R_ADDR_SHIFT = DEPTH_B_M_R;
-
-  private static final int VGA_HEIGHT_BITS = 9;
-
+  private int M2S_BC_ADDR_H;
+  private int M2S_BC_ADDR_SHIFT;
+  private int S2M_ADDR_H;
+  private int S2M_ADDR_SHIFT;
+  private int U2M_ADDR_H;
+  private int U2M_ADDR_SHIFT;
+  private int IO_REG_W_ADDR_H;
+  private int IO_REG_W_ADDR_SHIFT;
+  private int IO_REG_R_ADDR_H;
+  private int IO_REG_R_ADDR_SHIFT;
 
   private void f_get_m2s_bc_addr()
   {
@@ -44,9 +38,7 @@ public class MasterProgram extends AsmLib
     int m2s_bc_addr = 3;
     // m2s_bc_addr = M2S_BC_ADDR_H << M2S_BC_ADDR_SHIFT;
     label("f_get_m2s_bc_addr");
-    lib_wait_dep_pre();
-    as_mvi(m2s_bc_addr, M2S_BC_ADDR_H);
-    lib_wait_dep_post();
+    lib_set_im(m2s_bc_addr, M2S_BC_ADDR_H);
     as_sli(m2s_bc_addr, M2S_BC_ADDR_SHIFT);
     lib_return();
   }
@@ -57,7 +49,7 @@ public class MasterProgram extends AsmLib
     // output: R3:m2s_core_addr
     int core_id = 3;
     int m2s_core_addr = 3;
-    int tmp0 = LREG0;
+    int tmp0 = SP_REG_MVIL;
     // m2s_core_addr = ((core_id + PE_ID_START) << DEPTH_B_M_W) + (M2S_BANK_M2S << DEPTH_B_M2S);
     label("f_get_m2s_core_addr");
     as_addi(core_id, PE_ID_START);
@@ -78,9 +70,7 @@ public class MasterProgram extends AsmLib
     int s2m_addr = 3;
     // s2m_addr = S2M_ADDR_H << S2M_ADDR_SHIFT;
     label("f_get_s2m_addr");
-    lib_wait_dep_pre();
-    as_mvi(s2m_addr, S2M_ADDR_H);
-    lib_wait_dep_post();
+    lib_set_im(s2m_addr, S2M_ADDR_H);
     as_sli(s2m_addr, S2M_ADDR_SHIFT);
     lib_return();
   }
@@ -93,9 +83,7 @@ public class MasterProgram extends AsmLib
     int tmp0 = LREG0;
     // io_reg_w_addr = (IO_REG_W_ADDR_H << IO_REG_W_ADDR_SHIFT) + R3;
     label("f_get_io_reg_w_addr");
-    lib_wait_dep_pre();
-    as_mvi(tmp0, IO_REG_W_ADDR_H);
-    lib_wait_dep_post();
+    lib_set_im(tmp0, IO_REG_W_ADDR_H);
     lib_wait_dep_pre();
     as_sli(tmp0, IO_REG_W_ADDR_SHIFT);
     lib_wait_dep_post();
@@ -111,9 +99,7 @@ public class MasterProgram extends AsmLib
     int tmp0 = LREG0;
     // io_reg_r_addr = (IO_REG_R_ADDR_H << IO_REG_R_ADDR_SHIFT) + R3;
     label("f_get_io_reg_r_addr");
-    lib_wait_dep_pre();
-    as_mvi(tmp0, IO_REG_R_ADDR_H);
-    lib_wait_dep_post();
+    lib_set_im(tmp0, IO_REG_R_ADDR_H);
     lib_wait_dep_pre();
     as_sli(tmp0, IO_REG_R_ADDR_SHIFT);
     lib_wait_dep_post();
@@ -127,9 +113,7 @@ public class MasterProgram extends AsmLib
     int u2m_addr = 3;
     // u2m_addr = U2M_ADDR_H << U2M_ADDR_SHIFT;
     label("f_get_u2m_addr");
-    lib_wait_dep_pre();
-    as_mvi(u2m_addr, U2M_ADDR_H);
-    lib_wait_dep_post();
+    lib_set_im(u2m_addr, U2M_ADDR_H);
     as_sli(u2m_addr, U2M_ADDR_SHIFT);
     lib_return();
   }
@@ -187,9 +171,6 @@ public class MasterProgram extends AsmLib
     lib_wait_dep_post();
     as_sli(R4, DEPTH_B_M_R);
     lib_set_im(R3, addr_abs("d_helloworld"));
-    lib_wait_dep_pre();
-    as_nop();
-    lib_wait_dep_post();
     as_add(R3, R4);
     lib_call("f_uart_print");
     lib_call("f_halt");
@@ -254,8 +235,9 @@ public class MasterProgram extends AsmLib
     label("f_get_u2m_data_L_0");
     as_ld(data, addr_src);
     as_subi(size, 1);
+    lib_wait_dep_pre();
     as_addi(addr_src, 1);
-    lib_nop(3);
+    lib_wait_dep_post();
     as_st(addr_dst, data);
     as_cnz(SP_REG_CP, size);
     as_addi(addr_dst, 1);
@@ -282,7 +264,6 @@ public class MasterProgram extends AsmLib
     int addr_sp_x = LREG1;
     int addr_sp_y = LREG2;
     int addr_sp_s = LREG3;
-    int scale = LREG4;
     int x = LREG5;
     label("f_reset_vga");
     lib_wait_dep_pre();
@@ -293,18 +274,23 @@ public class MasterProgram extends AsmLib
     lib_wait_dep_post();
     as_mv(addr_sp_x, addr_ioreg);
     as_mv(addr_sp_y, addr_ioreg);
+    lib_wait_dep_pre();
     as_mv(addr_sp_s, addr_ioreg);
-    lib_nop(3);
+    lib_wait_dep_post();
     as_addi(addr_sp_x, IO_REG_W_SPRITE_X);
     as_addi(addr_sp_y, IO_REG_W_SPRITE_Y);
     as_addi(addr_sp_s, IO_REG_W_SPRITE_SCALE);
     lib_set_im(x, 64);
-    lib_wait_dep_pre();
-    as_nop();
-    lib_wait_dep_post();
     as_st(addr_sp_x, x);
     as_sti(addr_sp_y, 0);
-    as_sti(addr_sp_s, 7);
+    if (WIDTH_P_D == 32)
+    {
+      as_sti(addr_sp_s, 7);
+    }
+    else
+    {
+      as_sti(addr_sp_s, 5);
+    }
     lib_return();
   }
 
@@ -318,7 +304,7 @@ public class MasterProgram extends AsmLib
     int i = LREG2;
     int cores = LREG3;
     int addr_cores = LREG4;
-    int parallel = LREG5;
+    int para = LREG5;
     /*
     R3 = cores - 1;
     lib_call("f_get_m2s_core_addr");
@@ -326,12 +312,12 @@ public class MasterProgram extends AsmLib
     addr_cores = R3 + 1;
     next_core_offset = 1 << DEPTH_B_M_W;
     i = CORES;
-    parallel = PARALLEL;
+    para = PARALLEL;
     do
     {
       i--;
       mem[addr_core_id] = i;
-      mem[addr_cores] = parallel;
+      mem[addr_cores] = para;
       addr_core_id -= next_core_offset;
       addr_cores -= next_core_offset;
     } while (i != 0);
@@ -340,7 +326,7 @@ public class MasterProgram extends AsmLib
     lib_push(SP_REG_LINK);
     lib_push(R3);
     lib_set_im(cores, CORES);
-    lib_set_im(parallel, PARALLEL);
+    lib_set_im(para, PARALLEL);
     lib_set_im(R3, CORES - 1); // cores - 1
     lib_call("f_get_m2s_core_addr");
     as_mv(addr_core_id, R3);
@@ -356,7 +342,7 @@ public class MasterProgram extends AsmLib
     as_subi(i, 1);
     lib_wait_dep_post();
     as_st(addr_core_id, i);
-    as_st(addr_cores, parallel);
+    as_st(addr_cores, para);
     as_sub(addr_core_id, next_core_offset);
     as_sub(addr_cores, next_core_offset);
     as_cnz(SP_REG_CP, i);
@@ -372,6 +358,12 @@ public class MasterProgram extends AsmLib
     int addr_sp_y = LREG0;
     int tmp0 = LREG1;
     int page = LREG2;
+
+    /*
+    addr_sp_y = (MASTER_W_BANK_IO_REG << DEPTH_B_M_W) + IO_REG_W_SPRITE_Y;
+    page = -(((task_id & 1) ^ 1) << (IMAGE_HEIGHT_BITS + 1));
+    *addr_sp_y = page;
+    */
 
     lib_wait_dep_pre();
     as_mvi(addr_sp_y, MASTER_W_BANK_IO_REG);
@@ -393,9 +385,11 @@ public class MasterProgram extends AsmLib
     lib_wait_dep_post();
     as_mvi(page, 0);
     lib_wait_dep_pre();
+    // vga_height = 1 << VGA_HEIGHT_BITS
     as_sli(tmp0, VGA_HEIGHT_BITS);
     lib_wait_dep_post();
     lib_wait_dep_pre();
+    // sp_y = 0(page0), -vga_height(page1)
     as_sub(page, tmp0);
     lib_wait_dep_post();
     as_st(addr_sp_y, page);
@@ -483,6 +477,17 @@ public class MasterProgram extends AsmLib
     int scale = LREG1;
     int scale_mask = LREG2;
 
+    /*
+    addr_scale = addr_m2s_root + 3;
+    scale -= 1;
+    if (scale == 0)
+    {
+      scale = 256;
+    }
+    m2s[addr_scale] = scale;
+    mem["d_mandel_scale"] = scale;
+    */
+
     as_mv(addr_scale, addr_m2s_root);
     lib_ld(scale, "d_mandel_scale");
     lib_wait_dep_pre();
@@ -494,7 +499,9 @@ public class MasterProgram extends AsmLib
     lib_wait_dep_pre();
     as_cnz(SP_REG_CP, scale);
     lib_wait_dep_post();
+    lib_wait_dep_pre();
     as_mvil(256);
+    lib_wait_dep_post();
     lib_wait_dep_pre();
     as_xori(SP_REG_CP, -1);
     lib_wait_dep_post();
@@ -527,7 +534,10 @@ public class MasterProgram extends AsmLib
     int i = 9;
 
     /*
-    f_get_u2m_addr();
+    if (ENABLE_UART == 1)
+    {
+      lib_call("f_get_u2m_data");
+    }
     f_reset_vga();
     init_core_id();
     addr_m2s_root = M2S_BC_ADDR_H << M2S_BC_ADDR_SHIFT;
@@ -558,11 +568,16 @@ public class MasterProgram extends AsmLib
     } while (1);
     */
     as_nop();
-    lib_call("f_get_u2m_data");
     lib_init_stack();
+
+    if (ENABLE_UART == 1)
+    {
+      lib_call("f_get_u2m_data");
+    }
+
     lib_call("f_reset_vga");
     lib_call("f_init_core_id");
-    as_mvi(addr_m2s_root, M2S_BC_ADDR_H);
+    lib_set_im(addr_m2s_root, M2S_BC_ADDR_H);
     as_mvi(task_id, 0);
     lib_wait_dep_pre();
     as_mvi(addr_s2m_root, MASTER_R_BANK_S2M);
@@ -592,9 +607,18 @@ public class MasterProgram extends AsmLib
     lib_wait_dep_pre();
     as_ld(pe_ack, addr_s2m);
     lib_wait_dep_post();
+
     lib_wait_dep_pre();
     as_sub(pe_ack, task_id);
     lib_wait_dep_post();
+
+    if (WIDTH_P_D < 32)
+    {
+      lib_wait_dep_pre();
+      as_andi(pe_ack, 1);
+      lib_wait_dep_post();
+    }
+
     as_cnz(SP_REG_CP, pe_ack);
     lib_bc("master_thread_manager_L_2");
     as_addi(addr_s2m, 1);
@@ -602,10 +626,32 @@ public class MasterProgram extends AsmLib
     lib_bc("master_thread_manager_L_1");
 
     m_update_mandel_param();
-    //m_wait_vsync();
+
+    if (DEBUG == 1)
+    {
+      lib_push(R3);
+      as_mv(R3, task_id);
+      lib_call("f_uart_hex_word_ln");
+      lib_wait_dep_pre();
+      as_mvi(R3, 1);
+      lib_wait_dep_post();
+      lib_wait_dep_pre();
+      as_sli(R3, 15);
+      lib_wait_dep_post();
+      as_sli(R3, 6);
+      lib_call("f_wait");
+      lib_pop(R3);
+    }
+
+    if (WAIT_VSYNC == 1)
+    {
+      m_wait_vsync();
+    }
+
     m_vga_flip(task_id);
 
     as_st(addr_task_id, task_id);
+
     lib_ba("master_thread_manager_L_0");
 
     lib_call("f_halt");
@@ -616,23 +662,42 @@ public class MasterProgram extends AsmLib
     f_reset_pe();
     f_get_m2s_core_addr();
     f_reset_vga();
-    f_get_u2m_data();
-    f_get_u2m_addr();
-    f_memcpy();
+    if (ENABLE_UART == 1)
+    {
+      f_get_u2m_data();
+    }
+    if (DEBUG == 1)
+    {
+      f_uart_char();
+      f_uart_hex();
+      f_uart_hex_word();
+      f_uart_hex_word_ln();
+      f_wait();
+    }
   }
 
   @Override
-  public void init()
+  public void init(String[] args)
   {
-    set_rom_width(CODE_ROM_WIDTH, DATA_ROM_WIDTH);
-    set_rom_depth(CODE_ROM_DEPTH, DATA_ROM_DEPTH);
-    set_stack_address((1 << DATA_ROM_DEPTH) - 1);
-    set_filename("default_master");
+    super.init(args);
+    M2S_BC_ADDR_SHIFT = DEPTH_B_M2S;
+    M2S_BC_ADDR_H = ((MASTER_W_BANK_BC << DEPTH_B_M_W) + (M2S_BANK_M2S << DEPTH_B_M2S)) >>> M2S_BC_ADDR_SHIFT;
+    S2M_ADDR_H = MASTER_R_BANK_S2M;
+    S2M_ADDR_SHIFT = DEPTH_B_M_R;
+    U2M_ADDR_H = MASTER_R_BANK_U2M;
+    U2M_ADDR_SHIFT = DEPTH_B_M_R;
+    IO_REG_W_ADDR_H = MASTER_W_BANK_IO_REG;
+    IO_REG_W_ADDR_SHIFT = DEPTH_B_M_W;
+    IO_REG_R_ADDR_H = MASTER_R_BANK_IO_REG;
+    IO_REG_R_ADDR_SHIFT = DEPTH_B_M_R;
   }
 
   @Override
   public void program()
   {
+    set_filename("default_master_code");
+    set_rom_width(WIDTH_I);
+    set_rom_depth(DEPTH_M_I);
     //example_led();
     //example_helloworld();
     master_thread_manager();
@@ -641,6 +706,9 @@ public class MasterProgram extends AsmLib
   @Override
   public void data()
   {
+    set_filename("default_master_data");
+    set_rom_width(WIDTH_M_D);
+    set_rom_depth(DEPTH_M_D);
     label("d_rand");
     dat(0xfc720c27);
     label("d_mandel_scale");

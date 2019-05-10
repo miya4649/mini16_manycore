@@ -27,12 +27,45 @@ module testbench;
 
   localparam TRUE = 1'b1;
   localparam FALSE = 1'b0;
-  localparam ONE = 1'd1;
-  localparam ZERO = 1'd0;
+  localparam CORES = 4;
   localparam DEPTH_REG = 5;
+
+`ifdef PE16
+  // PE:16bit
+  localparam WIDTH_P_D = 16;
+  localparam DEPTH_P_I = 9;
+  localparam DEPTH_M2S = 4;
+  localparam DEPTH_FIFO = 3;
+  localparam VRAM_WIDTH_BITS = 6;
+  localparam VRAM_HEIGHT_BITS = 7;
+  localparam PE_REGFILE_RAM_TYPE = "distributed";
+  localparam PE_M2S_RAM_TYPE = "distributed";
+  localparam PE_DEPTH_REG = 4;
+  localparam PE_ENABLE_MUL = FALSE;
+  localparam PE_ENABLE_MULTI_BIT_SHIFT = FALSE;
+  localparam PE_ENABLE_MVC = FALSE;
+  localparam PE_ENABLE_WA = FALSE;
+`else
+  // PE:32bit
+  localparam WIDTH_P_D = 32;
+  localparam DEPTH_P_I = 10;
+  localparam DEPTH_M2S = 8;
+  localparam DEPTH_FIFO = 4;
+  localparam VRAM_WIDTH_BITS = 8;
+  localparam VRAM_HEIGHT_BITS = 9;
+  localparam PE_REGFILE_RAM_TYPE = "auto";
+  localparam PE_M2S_RAM_TYPE = "auto";
+  localparam PE_DEPTH_REG = 5;
+  localparam PE_ENABLE_MUL = TRUE;
+  localparam PE_ENABLE_MULTI_BIT_SHIFT = TRUE;
+  localparam PE_ENABLE_MVC = TRUE;
+  localparam PE_ENABLE_WA = TRUE;
+`endif
+
+  localparam PE_FIFO_RAM_TYPE = "distributed";
+  localparam PE_ENABLE_MVIL = TRUE;
   localparam UART_CLK_HZ = 50000000;
   localparam UART_SCLK_HZ = 115200;
-  localparam CORES = 4;
 
   reg clk;
   reg reset;
@@ -60,6 +93,9 @@ module testbench;
       for (i = 0; i < (1 << DEPTH_REG); i = i + 1)
         begin
           $dumpvars(0, testbench.mini16_soc_0.mini16_cpu_master.reg_file.rw_port_ram_a.gen.ram[i]);
+        end
+      for (i = 0; i < (1 << PE_DEPTH_REG); i = i + 1)
+        begin
           $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[0].mini16_pe_0.mini16_cpu_0.reg_file.rw_port_ram_a.gen.ram[i]);
           $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[1].mini16_pe_0.mini16_cpu_0.reg_file.rw_port_ram_a.gen.ram[i]);
         end
@@ -137,7 +173,21 @@ module testbench;
       .CORES (CORES),
       .UART_CLK_HZ (UART_CLK_HZ),
       .UART_SCLK_HZ (UART_SCLK_HZ),
-      .PE_FIFO_RAM_TYPE ("distributed")
+      .WIDTH_P_D (WIDTH_P_D),
+      .DEPTH_P_I (DEPTH_P_I),
+      .DEPTH_M2S (DEPTH_M2S),
+      .DEPTH_FIFO (DEPTH_FIFO),
+      .VRAM_WIDTH_BITS (VRAM_WIDTH_BITS),
+      .VRAM_HEIGHT_BITS (VRAM_HEIGHT_BITS),
+      .PE_REGFILE_RAM_TYPE (PE_REGFILE_RAM_TYPE),
+      .PE_FIFO_RAM_TYPE (PE_FIFO_RAM_TYPE),
+      .PE_M2S_RAM_TYPE (PE_M2S_RAM_TYPE),
+      .PE_DEPTH_REG (PE_DEPTH_REG),
+      .PE_ENABLE_MVIL (PE_ENABLE_MVIL),
+      .PE_ENABLE_MUL (PE_ENABLE_MUL),
+      .PE_ENABLE_MULTI_BIT_SHIFT (PE_ENABLE_MULTI_BIT_SHIFT),
+      .PE_ENABLE_MVC (PE_ENABLE_MVC),
+      .PE_ENABLE_WA (PE_ENABLE_WA)
       )
   mini16_soc_0
     (
