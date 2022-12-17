@@ -20,10 +20,12 @@ with UART, VGA interface
 
 501 cores implemented, Fmax: 100 MHz / BeMicro-CVA9
 
-## Documents (Japanese):
+## Documents and Latest Version (Japanese):
 
 http://cellspe.matrix.jp/zerofpga/mini16_manycore.html
 
-## A Demonstration of parallel processing of the Mandelbrot set
+## Demonstration Video:
+
+An example of parallel processing of the Mandelbrot set
 
 [![mini16 manycore mandelbrot demo](https://img.youtube.com/vi/qd9qpuM_cWg/0.jpg)](https://www.youtube.com/watch?v=qd9qpuM_cWg)
