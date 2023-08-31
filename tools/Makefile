@@ -5,7 +5,7 @@ HEADERS=$(wildcard *.h)
 OBJS=$(SRCS:.c=.o)
 LIBSRCS=$(wildcard *lib.c)
 LIBOBJS=$(LIBSRCS:.c=.o)
-UART_DEVICE?=/dev/ttyUSB0
+UART_DEVICE?=/dev/ttyUART
 
 all: $(EXES)
 

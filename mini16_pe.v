@@ -24,8 +24,8 @@ module mini16_pe
     parameter MASTER_W_BANK_BC = 63,
     parameter DEPTH_V_F = 16,
     parameter DEPTH_B_F = 15,
-    parameter DEPTH_V_M_W = 17,
-    parameter DEPTH_B_M_W = 11,
+    parameter DEPTH_V_M = 17,
+    parameter DEPTH_B_M = 11,
     parameter DEPTH_V_S_R = 10,
     parameter DEPTH_B_S_R = 8,
     parameter DEPTH_V_S_W = 9,
@@ -49,7 +49,7 @@ module mini16_pe
    input                          fifo_req_r,
    output                         fifo_valid,
    output [WIDTH_D+DEPTH_V_F-1:0] fifo_r_data,
-   input [DEPTH_V_M_W-1:0]        addr_i,
+   input [DEPTH_V_M-1:0]          addr_i,
    input [WIDTH_D-1:0]            data_i,
    input                          we_i
    );
@@ -126,14 +126,14 @@ module mini16_pe
   // data from master
   reg shared_m2s_we;
   reg mem_i_we;
-  reg [DEPTH_V_M_W-1:0] addr_i_d1;
-  reg [WIDTH_D-1:0]     data_i_d1;
-  reg [DEPTH_V_M_W-1:0] addr_i_d2;
-  reg [WIDTH_D-1:0]     data_i_d2;
-  reg                   we_i_d1;
-  wire [DEPTH_V_M_W-DEPTH_B_M_W-1:0] core_bank;
+  reg [DEPTH_V_M-1:0] addr_i_d1;
+  reg [WIDTH_D-1:0]   data_i_d1;
+  reg [DEPTH_V_M-1:0] addr_i_d2;
+  reg [WIDTH_D-1:0]   data_i_d2;
+  reg                 we_i_d1;
+  wire [DEPTH_V_M-DEPTH_B_M-1:0] core_bank;
   wire [DEPTH_V_M2S-DEPTH_B_M2S-1:0] m2s_bank;
-  assign core_bank = addr_i_d1[DEPTH_V_M_W-1:DEPTH_B_M_W];
+  assign core_bank = addr_i_d1[DEPTH_V_M-1:DEPTH_B_M];
   assign m2s_bank = addr_i_d1[DEPTH_V_M2S-1:DEPTH_B_M2S];
 
   always @(posedge clk)

@@ -19,34 +19,35 @@ module vga_iface
     parameter BPC = 8
     )
   (
-   input                     clk,
-   input                     reset,
+   input              clk,
+   input              reset,
 
-   output                    vsync,
-   output signed [32-1 : 0]  vcount,
-   input                     ext_clkv,
-   input                     ext_resetv,
-   input signed [BPP-1 : 0]  ext_color,
-   output                    ext_vga_hs,
-   output                    ext_vga_vs,
-   output                    ext_vga_de,
-   output signed [BPC-1 : 0] ext_vga_r,
-   output signed [BPC-1 : 0] ext_vga_g,
-   output signed [BPC-1 : 0] ext_vga_b,
-   output signed [32-1 : 0]  ext_count_h,
-   output signed [32-1 : 0]  ext_count_v
+   output             vsync,
+   output [32-1 : 0]  vcount,
+   input              ext_clkv,
+   input              ext_resetv,
+   input [BPP-1 : 0]  ext_color,
+   output             ext_vga_hs,
+   output             ext_vga_vs,
+   output             ext_vga_de,
+   output [BPC-1 : 0] ext_vga_r,
+   output [BPC-1 : 0] ext_vga_g,
+   output [BPC-1 : 0] ext_vga_b,
+   output [32-1 : 0]  ext_count_h,
+   output [32-1 : 0]  ext_count_v
    );
 
-  localparam VGA_MAX_H = 800-1;
-  localparam VGA_MAX_V = 525-1;
-  localparam VGA_WIDTH = 640;
-  localparam VGA_HEIGHT = 480;
-  localparam VGA_SYNC_H_START = 656;
-  localparam VGA_SYNC_V_START = 490;
-  localparam VGA_SYNC_H_END = 752;
-  localparam VGA_SYNC_V_END = 492;
-  localparam LINE_BITS = 10;
-  localparam PIXEL_DELAY = 8;
+  localparam VGA_MAX_H = 1650-1;
+  localparam VGA_MAX_V = 750-1;
+  localparam VGA_WIDTH = 1280;
+  localparam VGA_HEIGHT = 720;
+  localparam CLIP_HEIGHT = 512;
+  localparam VGA_SYNC_H_START = 1390;
+  localparam VGA_SYNC_V_START = 725;
+  localparam VGA_SYNC_H_END = 1430;
+  localparam VGA_SYNC_V_END = 730;
+  localparam LINE_BITS = 11;
+  localparam PIXEL_DELAY = 2;
 
   reg [LINE_BITS-1:0] count_h;
   reg [LINE_BITS-1:0] count_v;
@@ -106,11 +107,14 @@ module vga_iface
   assign vga_vs = ((count_v >= VGA_SYNC_V_START) && (count_v < VGA_SYNC_V_END)) ? 1'b0 : 1'b1;
   // Pixel valid
   assign pixel_valid = ((count_h < VGA_WIDTH) && (count_v < VGA_HEIGHT)) ? 1'b1 : 1'b0;
+  assign clip = (count_v < CLIP_HEIGHT) ? 1'b1 : 1'b0;
 
+  wire pixel_en;
+  assign pixel_en = pixel_valid_delay & clip_delay;
   // ext out
-  assign ext_vga_r = pixel_valid_delay ? ext_color[2] : 1'd0;
-  assign ext_vga_g = pixel_valid_delay ? ext_color[1] : 1'd0;
-  assign ext_vga_b = pixel_valid_delay ? ext_color[0] : 1'd0;
+  assign ext_vga_r = pixel_en ? ext_color[2] : 1'd0;
+  assign ext_vga_g = pixel_en ? ext_color[1] : 1'd0;
+  assign ext_vga_b = pixel_en ? ext_color[0] : 1'd0;
   assign ext_vga_hs = vga_hs_delay;
   assign ext_vga_vs = vga_vs_delay;
   assign ext_vga_de = pixel_valid_delay;
@@ -176,6 +180,18 @@ module vga_iface
      .clk (ext_clkv),
      .data_in (pixel_valid),
      .data_out (pixel_valid_delay)
+     );
+
+  shift_register_vector
+    #(
+      .WIDTH (1),
+      .DEPTH (PIXEL_DELAY)
+      )
+  shift_register_vector_clip
+    (
+     .clk (ext_clkv),
+     .data_in (clip),
+     .data_out (clip_delay)
      );
 
 endmodule

@@ -16,6 +16,9 @@ c32: $(OBJS)
 c64: $(OBJS)
 	java AsmTop --cores=64 --width_p_d=16 --depth_p_i=9 --depth_m2s=4 --vram_width_bits=6 --vram_height_bits=7 --image_width_bits=6 --image_height_bits=6 --pe_depth_reg=4 --pe_enable_mvil=1 --pe_enable_mul=0 --pe_enable_mvc=0 --pe_enable_wa=0 --pe_enable_multi_bit_shift=0 --lreg_start=8
 
+c96: $(OBJS)
+	java AsmTop --cores=96
+
 c128: $(OBJS)
 	java AsmTop --cores=128
 

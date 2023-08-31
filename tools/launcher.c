@@ -25,7 +25,7 @@
 #include "uartlib.h"
 
 //#define UART_DEVICE "/dev/ttyAMA0"
-#define UART_DEVICE "/dev/ttyUSB0"
+#define UART_DEVICE "/dev/ttyUART"
 #define CODE_FILENAME "../bin_code.bin"
 #define DATA_FILENAME "../bin_data.bin"
 #define MAX_FILE_SIZE 0x100000

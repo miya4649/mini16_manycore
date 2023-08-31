@@ -44,39 +44,50 @@ module mini16_soc
     parameter PE_ENABLE_WA = 1'b1
     )
   (
-   input  clk,
-   input  reset,
+   input         clk,
+   input         reset,
 `ifdef USE_UART
-   input  uart_rxd,
-   output uart_txd,
+   input         uart_rxd,
+   output        uart_txd,
 `endif
 `ifdef USE_VGA
-   input  clkv,
-   input  resetv,
-   output vga_hs,
-   output vga_vs,
-   output vga_r,
-   output vga_g,
-   output vga_b,
+   input         clkv,
+   input         resetv,
+   output        vga_hs,
+   output        vga_vs,
+   output        vga_de,
+   output        vga_r,
+   output        vga_g,
+   output        vga_b,
 `endif
    output [15:0] led
    );
 
+  // instruction width
   localparam WIDTH_I = 16;
+  // register file depth
   localparam DEPTH_REG = 5;
+  // I/O register depth
   localparam DEPTH_IO_REG = 5;
   localparam DEPTH_VRAM = (VRAM_WIDTH_BITS + VRAM_HEIGHT_BITS);
+  // UART I/O addr depth
   localparam DEPTH_B_U = max(DEPTH_M_I, DEPTH_U2M);
+  // UART I/O Virtual memory depth
   localparam DEPTH_V_U = (DEPTH_B_U + 2);
   localparam CORE_BITS = $clog2(CORES + 6);
   localparam DEPTH_B_F = max(DEPTH_VRAM, DEPTH_S2M);
-  localparam DEPTH_V_F = (DEPTH_B_F + 1);
   localparam DEPTH_B_M2S = max(DEPTH_P_I, DEPTH_M2S);
   localparam DEPTH_V_M2S = (DEPTH_B_M2S + 1);
+  // Master write addr depth
   localparam DEPTH_B_M_W = max(DEPTH_V_M2S, max(DEPTH_M_D, DEPTH_IO_REG));
-  localparam DEPTH_V_M_W = (DEPTH_B_M_W + CORE_BITS);
+  // Master read addr depth
   localparam DEPTH_B_M_R = max(DEPTH_M_D, max(DEPTH_IO_REG, max(DEPTH_U2M, DEPTH_S2M)));
+  // Master virtual memory write depth
+  localparam DEPTH_V_M_W = (DEPTH_B_M_W + CORE_BITS);
+  // Master virtual memory read depth
   localparam DEPTH_V_M_R = (DEPTH_B_M_R + 2);
+  localparam DEPTH_V_F = (DEPTH_B_F + 1);
+  localparam DEPTH_V_M = max(DEPTH_V_M_W, DEPTH_V_M_R);
   localparam DEPTH_B_S_R = max(DEPTH_P_D, DEPTH_M2S);
   localparam DEPTH_V_S_R = (DEPTH_B_S_R + 2);
   localparam DEPTH_B_S_W = max(DEPTH_V_F, DEPTH_P_D);
@@ -465,7 +476,7 @@ module mini16_soc
      .ext_color (color_all),
      .ext_vga_hs (vga_hs),
      .ext_vga_vs (vga_vs),
-     .ext_vga_de (),
+     .ext_vga_de (vga_de),
      .ext_vga_r (vga_r),
      .ext_vga_g (vga_g),
      .ext_vga_b (vga_b),
@@ -480,7 +491,7 @@ module mini16_soc
   wire master_d_we;
   wire [DEPTH_M_I-1:0] master_i_r_addr;
   wire [WIDTH_I-1:0] master_i_r_data;
-  wire [DEPTH_V_M_W-1:0] master_d_r_addr;
+  wire [DEPTH_V_M_R-1:0] master_d_r_addr;
   reg [WIDTH_M_D-1:0] master_d_r_data;
   wire [DEPTH_V_M_W-DEPTH_B_M_W-1:0] master_d_w_bank;
   assign master_d_w_bank = master_d_w_addr[DEPTH_V_M_W-1:DEPTH_B_M_W];
@@ -489,7 +500,7 @@ module mini16_soc
       .WIDTH_I (WIDTH_I),
       .WIDTH_D (WIDTH_M_D),
       .DEPTH_I (DEPTH_M_I),
-      .DEPTH_D (DEPTH_V_M_W),
+      .DEPTH_D (DEPTH_V_M),
       .DEPTH_REG (DEPTH_REG),
       .ENABLE_MVIL (TRUE),
       .ENABLE_MUL (TRUE),
@@ -590,8 +601,8 @@ module mini16_soc
                .MASTER_W_BANK_BC (MASTER_W_BANK_BC),
                .DEPTH_V_F (DEPTH_V_F),
                .DEPTH_B_F (DEPTH_B_F),
-               .DEPTH_V_M_W (DEPTH_V_M_W),
-               .DEPTH_B_M_W (DEPTH_B_M_W),
+               .DEPTH_V_M (DEPTH_V_M),
+               .DEPTH_B_M (DEPTH_B_M_W),
                .DEPTH_V_S_R (DEPTH_V_S_R),
                .DEPTH_B_S_R (DEPTH_B_S_R),
                .DEPTH_V_S_W (DEPTH_V_S_W),

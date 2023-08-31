@@ -12,6 +12,8 @@ Up to 501-core processors are implemented in a single FPGA
 
 171 cores implemented, Fmax: 100 MHz / BeMicro-CVA9
 
+97 cores implemented, Fmax: 200 MHz / Kria KV260
+
 with UART, VGA interface
 
 - 16bit data/register width processor core version
