@@ -28,8 +28,10 @@
 *</pre>
 *
 ******************************************************************************/
+
+/* 12/14/23 Modified by miya */
+
 #include "xdpdma_video_example.h"
-extern XDpDma_FrameBuffer FrameBuffer;
 
 /******************************************************************************/
 /**
@@ -158,8 +160,6 @@ void DpPsu_Run(Run_Config *RunCfgPtr)
 	XDpPsu_EnableMainLink(DpPsuPtr, 0);
 
 	if (!XDpPsu_IsConnected(DpPsuPtr)) {
-		XDpDma_SetChannelState(RunCfgPtr->DpDmaPtr, GraphicsChan,
-				       XDPDMA_DISABLE);
 		xil_printf("! Disconnected.\n\r");
 		return;
 	}
@@ -186,8 +186,6 @@ void DpPsu_Run(Run_Config *RunCfgPtr)
 		}
 		else if (Status != XST_SUCCESS)
 			continue;
-
-		XDpDma_DisplayGfxFrameBuffer(RunCfgPtr->DpDmaPtr, &FrameBuffer);
 
 		DpPsu_SetupVideoStream(RunCfgPtr);
 		XDpPsu_EnableMainLink(DpPsuPtr, 1);
@@ -291,15 +289,10 @@ void DpPsu_IsrHpdPulse(void *ref)
 void DpPsu_SetupVideoStream(Run_Config *RunCfgPtr)
 {
 	XDpPsu		 *DpPsuPtr    = RunCfgPtr->DpPsuPtr;
-	XDpPsu_MainStreamAttributes *MsaConfig = &DpPsuPtr->MsaConfig;
 
 	XDpPsu_SetColorEncode(DpPsuPtr, RunCfgPtr->ColorEncode);
 	XDpPsu_CfgMsaSetBpc(DpPsuPtr, RunCfgPtr->Bpc);
 	XDpPsu_CfgMsaUseStandardVideoMode(DpPsuPtr, RunCfgPtr->VideoMode);
-
-	/* Set pixel clock. */
-	RunCfgPtr->PixClkHz = MsaConfig->PixelClockHz;
-	XAVBuf_SetPixelClock(RunCfgPtr->PixClkHz);
 
 	/* Reset the transmitter. */
 	XDpPsu_WriteReg(DpPsuPtr->Config.BaseAddr, XDPPSU_SOFT_RESET, 0x1);

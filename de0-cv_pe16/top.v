@@ -105,12 +105,10 @@ module top
   reg  resetv;
   reg  resetv1;
   // truncate RGB data
-  wire VGA_R_in;
-  wire VGA_G_in;
-  wire VGA_B_in;
-  assign VGA_R = {4{VGA_R_in}};
-  assign VGA_G = {4{VGA_G_in}};
-  assign VGA_B = {4{VGA_B_in}};
+  wire [2:0] VGA_COLOR_in;
+  assign VGA_R = {4{VGA_COLOR_in[2]}};
+  assign VGA_G = {4{VGA_COLOR_in[1]}};
+  assign VGA_B = {4{VGA_COLOR_in[0]}};
 
   always @(posedge clkv)
     begin
@@ -165,9 +163,7 @@ module top
      .resetv (resetv),
      .vga_hs (VGA_HS),
      .vga_vs (VGA_VS),
-     .vga_r (VGA_R_in),
-     .vga_g (VGA_G_in),
-     .vga_b (VGA_B_in),
+     .vga_color (VGA_COLOR_in),
 `endif
      .led (led)
      );

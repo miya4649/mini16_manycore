@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2015, 2019, miya
+  Copyright (c) 2015 miya
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -13,6 +13,16 @@
   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+/*
+ dual_clk_ram ver.2
+ write delay: immediately
+ read delay: 2 clock cycle
+*/
+
+`ifndef RAM_TYPE_DISTRIBUTED
+  `define RAM_TYPE_DISTRIBUTED "distributed"
+`endif
+
 module dual_clk_ram
   #(
     parameter DATA_WIDTH = 8,
@@ -20,12 +30,12 @@ module dual_clk_ram
     parameter RAM_TYPE = "auto"
     )
   (
-   input [(DATA_WIDTH-1):0]      data_in,
-   input [(ADDR_WIDTH-1):0]      read_addr,
-   input [(ADDR_WIDTH-1):0]      write_addr,
-   input                         we,
-   input                         read_clock,
-   input                         write_clock,
+   input wire [(DATA_WIDTH-1):0] data_in,
+   input wire [(ADDR_WIDTH-1):0] read_addr,
+   input wire [(ADDR_WIDTH-1):0] write_addr,
+   input wire                    we,
+   input wire                    read_clock,
+   input wire                    write_clock,
    output reg [(DATA_WIDTH-1):0] data_out
    );
 
@@ -33,43 +43,27 @@ module dual_clk_ram
     if (RAM_TYPE == "distributed")
       begin: gen
         (* ramstyle = `RAM_TYPE_DISTRIBUTED *) reg [DATA_WIDTH-1:0] ram [0:(1 << ADDR_WIDTH)-1];
-
-        reg [(ADDR_WIDTH-1):0] read_addr_reg;
-
-        always @(posedge read_clock)
-          begin
-            read_addr_reg <= read_addr;
-            data_out <= ram[read_addr_reg];
-          end
-
-        always @(posedge write_clock)
-          begin
-            if (we)
-              begin
-                ram[write_addr] <= data_in;
-              end
-          end
       end
     else
       begin: gen
         reg [DATA_WIDTH-1:0] ram [0:(1 << ADDR_WIDTH)-1];
-
-        reg [(ADDR_WIDTH-1):0] read_addr_reg;
-
-        always @(posedge read_clock)
-          begin
-            read_addr_reg <= read_addr;
-            data_out <= ram[read_addr_reg];
-          end
-
-        always @(posedge write_clock)
-          begin
-            if (we)
-              begin
-                ram[write_addr] <= data_in;
-              end
-          end
       end
   endgenerate
+
+  reg [(ADDR_WIDTH-1):0]         read_addr_reg;
+
+  always @(posedge read_clock)
+    begin
+      read_addr_reg <= read_addr;
+      data_out <= gen.ram[read_addr_reg];
+    end
+
+  always @(posedge write_clock)
+    begin
+      if (we)
+        begin
+          gen.ram[write_addr] <= data_in;
+        end
+    end
 
 endmodule

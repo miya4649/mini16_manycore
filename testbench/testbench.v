@@ -14,7 +14,6 @@
 */
 
 `timescale 1ns / 1ps
-`default_nettype none
 //`define USE_UART
 `define USE_VGA
 `define DEBUG
@@ -76,12 +75,11 @@ module testbench;
   wire uart_rxd;
 `endif
 `ifdef USE_VGA
+  localparam VRAM_BPP = 3;
   localparam STEPV = 40;
   wire VGA_HS;
   wire VGA_VS;
-  wire [3:0] VGA_R;
-  wire [3:0] VGA_G;
-  wire [3:0] VGA_B;
+  wire [VRAM_BPP-1:0] VGA_COLOR;
 `endif
 
   integer i;
@@ -145,12 +143,8 @@ module testbench;
   reg resetv;
   reg resetv1;
   // truncate RGB data
-  wire VGA_R_in;
-  wire VGA_G_in;
-  wire VGA_B_in;
-  assign VGA_R = {4{VGA_R_in}};
-  assign VGA_G = {4{VGA_G_in}};
-  assign VGA_B = {4{VGA_B_in}};
+  wire VGA_COLOR_in;
+  assign VGA_COLOR = VGA_COLOR_in;
 
   initial
     begin
@@ -202,9 +196,7 @@ module testbench;
      .resetv (resetv),
      .vga_hs (VGA_HS),
      .vga_vs (VGA_VS),
-     .vga_r (VGA_R_in),
-     .vga_g (VGA_G_in),
-     .vga_b (VGA_B_in),
+     .vga_color (VGA_COLOR_in),
 `endif
      .led (led)
      );

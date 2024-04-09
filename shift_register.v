@@ -13,38 +13,28 @@
   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// DEPTH >= 1
-// Latency = DEPTH
+/*
+ parameter DELAY >= 2
+ 'dout' is 'DELAY' clock cycle delay of 'din'
+ */
 
-module shift_register_vector
+module shift_register
   #(
-    parameter WIDTH = 8,
-    parameter DEPTH = 3
+    parameter DELAY = 2
     )
   (
-   input              clk,
-   input [WIDTH-1:0]  data_in,
-   output [WIDTH-1:0] data_out
+   input wire  clk,
+   input wire  din,
+   output wire dout
    );
 
-  generate
-    genvar i;
-    for (i = 0; i < DEPTH; i = i + 1)
-      begin: delay_gen
-        reg [WIDTH-1:0] temp_reg;
-        always @(posedge clk)
-          begin
-            if (i == DEPTH-1)
-              begin
-                delay_gen[i].temp_reg <= data_in;
-              end
-            else
-              begin
-                delay_gen[i].temp_reg <= delay_gen[i+1].temp_reg;
-              end
-          end
-      end
-    assign data_out = delay_gen[0].temp_reg;
-  endgenerate
+  reg [DELAY-1:0] sreg;
+
+  always @(posedge clk)
+    begin
+      sreg <= {sreg[DELAY-2:0], din};
+    end
+
+  assign dout = sreg[DELAY-1];
 
 endmodule

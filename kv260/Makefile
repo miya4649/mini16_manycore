@@ -1,18 +1,27 @@
-ROMS=$(wildcard ../*_code_mem.v ../*_data_mem.v ../*_code.bin ../*_data.bin)
+PROJECT = project_1
+VITIS_WORKSPACE = vitis_workspace
+VIVADO = $(XILINX_VIVADO)/bin/vivado
+VITIS = $(XILINX_VITIS)/bin/vitis
+RM = rm -rf
 
-all: program
+all: asm vivado vivado-run vitis
 
-run: program tool
-	make -C ../tools run
-
-tool:
-	make -C ../tools
-
-program:
+asm:
 	make -C ../asm c96
 
-clean:
-	make -C ../asm clean
-	make -C ../tools clean
+vivado:
+	$(VIVADO) -mode batch -notrace -source vivado.tcl
 
-	rm -f $(ROMS)
+vivado-run:
+	$(VIVADO) -mode batch -notrace -source vivado-run.tcl
+
+vitis:
+	$(VITIS) -source vitisnew.py
+
+run:
+	make -C ../tools run
+
+clean:
+	$(RM) $(PROJECT) $(VITIS_WORKSPACE) $(VITIS_CLASSIC_WORKSPACE) vivado.log vivado*.jou .Xil *dynamic* *.log *.xpe .gitignore .lock .peers.ini
+	make -C ../tools clean
+	make -C ../asm clean

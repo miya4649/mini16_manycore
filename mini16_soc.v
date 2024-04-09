@@ -29,7 +29,6 @@ module mini16_soc
     parameter DEPTH_S2M = 9,
     parameter DEPTH_U2M = 11,
     parameter VRAM_BPP = 3,
-    parameter VRAM_BPC = 1,
     parameter VRAM_WIDTH_BITS = 8,
     parameter VRAM_HEIGHT_BITS = 9,
     parameter MASTER_REGFILE_RAM_TYPE = "auto",
@@ -44,23 +43,21 @@ module mini16_soc
     parameter PE_ENABLE_WA = 1'b1
     )
   (
-   input         clk,
-   input         reset,
+   input                 clk,
+   input                 reset,
 `ifdef USE_UART
-   input         uart_rxd,
-   output        uart_txd,
+   input                 uart_rxd,
+   output                uart_txd,
 `endif
 `ifdef USE_VGA
-   input         clkv,
-   input         resetv,
-   output        vga_hs,
-   output        vga_vs,
-   output        vga_de,
-   output        vga_r,
-   output        vga_g,
-   output        vga_b,
+   input                 clkv,
+   input                 resetv,
+   output                vga_hs,
+   output                vga_vs,
+   output                vga_de,
+   output [VRAM_BPP-1:0] vga_color,
 `endif
-   output [15:0] led
+   output [15:0]         led
    );
 
   // instruction width
@@ -461,10 +458,34 @@ module mini16_soc
      );
 
   vga_iface
-   #(
-    .BPP (VRAM_BPP),
-    .BPC (VRAM_BPC)
-    )
+    #(
+  `ifdef VGA_720P
+      .VGA_MAX_H (1650-1),
+      .VGA_MAX_V (750-1),
+      .VGA_WIDTH (1280),
+      .VGA_HEIGHT (720),
+      .VGA_SYNC_H_START (1390),
+      .VGA_SYNC_V_START (725),
+      .VGA_SYNC_H_END (1430),
+      .VGA_SYNC_V_END (730),
+      .PIXEL_DELAY (2),
+  `else
+      .VGA_MAX_H (800-1),
+      .VGA_MAX_V (525-1),
+      .VGA_WIDTH (640),
+      .VGA_HEIGHT (480),
+      .VGA_SYNC_H_START (656),
+      .VGA_SYNC_V_START (490),
+      .VGA_SYNC_H_END (752),
+      .VGA_SYNC_V_END (492),
+      .PIXEL_DELAY (2),
+  `endif
+  `ifdef CLIPV512
+      .CLIP_ENABLE (1),
+      .CLIP_V_E (512),
+  `endif
+      .BPP (VRAM_BPP)
+      )
   vga_iface_0
     (
      .clk (clk),
@@ -473,13 +494,11 @@ module mini16_soc
      .vcount (vga_vcount),
      .ext_clkv (clkv),
      .ext_resetv (resetv),
-     .ext_color (color_all),
+     .ext_color_in (color_all),
      .ext_vga_hs (vga_hs),
      .ext_vga_vs (vga_vs),
      .ext_vga_de (vga_de),
-     .ext_vga_r (vga_r),
-     .ext_vga_g (vga_g),
-     .ext_vga_b (vga_b),
+     .ext_vga_color_out (vga_color),
      .ext_count_h (ext_vga_count_h),
      .ext_count_v (ext_vga_count_v)
      );

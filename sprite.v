@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016, 2019, miya
+  Copyright (c) 2016 miya
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -12,6 +12,8 @@
   IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
+
+// ver. 2024/03/31
 
 module sprite
   #(
@@ -106,52 +108,48 @@ module sprite
      .data_out (bitmap_color_d5)
      );
 
-  shift_register_vector
+  cdc_synchronizer
     #(
-      .WIDTH (OFFSET_BITS),
-      .DEPTH (2)
+      .DATA_WIDTH (OFFSET_BITS)
       )
-  shift_register_vector_x
+  cdc_synchronizer_x
     (
      .clk (ext_clkv),
      .data_in (x[OFFSET_BITS-1:0]),
      .data_out (x_sync)
      );
 
-  shift_register_vector
+  cdc_synchronizer
     #(
-      .WIDTH (OFFSET_BITS),
-      .DEPTH (2)
+      .DATA_WIDTH (OFFSET_BITS)
       )
-  shift_register_vector_y
+  cdc_synchronizer_y
     (
      .clk (ext_clkv),
      .data_in (y[OFFSET_BITS-1:0]),
      .data_out (y_sync)
      );
 
-  shift_register_vector
+  cdc_synchronizer
     #(
-      .WIDTH (SCALE_BITS_BITS),
-      .DEPTH (2)
+      .DATA_WIDTH (SCALE_BITS_BITS)
       )
-  shift_register_vector_scale
+  cdc_synchronizer_scale
     (
      .clk (ext_clkv),
      .data_in (scale[SCALE_BITS_BITS-1:0]),
      .data_out (scale_sync)
      );
 
-  shift_register_vector
+  shift_register
     #(
-      .WIDTH (1),
-      .DEPTH (5)
+      .DELAY (5)
       )
-  shift_register_vector_vp_sprite_inside_d7
+  shift_register_vp_sprite_inside_d7
     (
      .clk (ext_clkv),
-     .data_in (vp_sprite_inside_d2),
-     .data_out (vp_sprite_inside_d7)
+     .din (vp_sprite_inside_d2),
+     .dout (vp_sprite_inside_d7)
      );
 
 endmodule

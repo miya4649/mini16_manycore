@@ -80,17 +80,15 @@ module top
   reg    resetv;
   reg    resetv1;
   // VGA port
-  wire   VGA_R_in;
-  wire   VGA_G_in;
-  wire   VGA_B_in;
-  wire   VGA_HS;
-  wire   VGA_VS;
-  assign GPIO2 = VGA_R_in;
-  assign GPIO4 = VGA_R_in;
-  assign GPIO6 = VGA_G_in;
-  assign GPIO8 = VGA_G_in;
-  assign GPIO_D = VGA_B_in;
-  assign DIFF_TX_N9 = VGA_B_in;
+  wire [2:0] VGA_COLOR_in;
+  wire       VGA_HS;
+  wire       VGA_VS;
+  assign GPIO2 = VGA_COLOR_in[2];
+  assign GPIO4 = VGA_COLOR_in[2];
+  assign GPIO6 = VGA_COLOR_in[1];
+  assign GPIO8 = VGA_COLOR_in[1];
+  assign GPIO_D = VGA_COLOR_in[0];
+  assign DIFF_TX_N9 = VGA_COLOR_in[0];
   assign LVDS_TX_O_P3 = VGA_HS;
   assign LVDS_TX_O_P0 = VGA_VS;
   always @(posedge clkv)
@@ -130,9 +128,7 @@ module top
      .resetv (resetv),
      .vga_hs (VGA_HS),
      .vga_vs (VGA_VS),
-     .vga_r (VGA_R_in),
-     .vga_g (VGA_G_in),
-     .vga_b (VGA_B_in),
+     .vga_color (VGA_COLOR_in),
 `endif
      .led (led)
      );

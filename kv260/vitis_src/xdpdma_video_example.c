@@ -1,5 +1,6 @@
 /*******************************************************************************
-* Copyright (C) 2017 - 2020 Xilinx, Inc.  All rights reserved.
+* Copyright (C) 2017 - 2022 Xilinx, Inc.  All rights reserved.
+* Copyright (C) 2022 - 2023 Advanced Micro Devices, Inc.  All rights reserved.
 * SPDX-License-Identifier: MIT
 *******************************************************************************/
 
@@ -27,7 +28,7 @@
 *
 ******************************************************************************/
 
-/* 2023/08/11 Modified by miya */
+/* 03/31/24 Modified by miya */
 
 /***************************** Include Files *********************************/
 
@@ -36,19 +37,24 @@
 #include "xil_cache.h"
 #include "xdpdma_video_example.h"
 
-//#include "platform.h"
-
 /************************** Constant Definitions *****************************/
+#ifndef SDT
 #define DPPSU_DEVICE_ID		XPAR_PSU_DP_DEVICE_ID
 #define AVBUF_DEVICE_ID		XPAR_PSU_DP_DEVICE_ID
 #define DPDMA_DEVICE_ID		XPAR_XDPDMA_0_DEVICE_ID
+#define INTC_DEVICE_ID		XPAR_SCUGIC_0_DEVICE_ID
 #define DPPSU_INTR_ID		151
 #define DPDMA_INTR_ID		154
-#define INTC_DEVICE_ID		XPAR_SCUGIC_0_DEVICE_ID
 
 #define DPPSU_BASEADDR		XPAR_PSU_DP_BASEADDR
 #define AVBUF_BASEADDR		XPAR_PSU_DP_BASEADDR
 #define DPDMA_BASEADDR		XPAR_PSU_DPDMA_BASEADDR
+#else
+#define DPPSU_BASEADDR		XPAR_XDPPSU_0_BASEADDR
+#define AVBUF_BASEADDR		XPAR_XDPPSU_0_BASEADDR
+#define DPDMA_BASEADDR		XPAR_XDPDMA_0_BASEADDR
+#define INTC_BASEADDR       XPAR_XSCUGIC_0_BASEADDR
+#endif
 
 #define BUFFERSIZE			1280 * 720 * 4		/* HTotal * VTotal * BPP */
 #define LINESIZE			1280 * 4			/* HTotal * BPP */
@@ -56,14 +62,11 @@
 													be aligned to 256*/
 
 /************************** Variable Declarations ***************************/
-XDpDma DpDma;
 XDpPsu DpPsu;
 XAVBuf AVBuf;
 XScuGic Intr;
 Run_Config RunCfg;
 
-u8 Frame[BUFFERSIZE] __attribute__ ((__aligned__(256)));
-XDpDma_FrameBuffer FrameBuffer;
 
 /**************************** Type Definitions *******************************/
 
@@ -86,8 +89,6 @@ int main()
 	Xil_DCacheDisable();
 	Xil_ICacheDisable();
 
-        //init_platform();
-
 	xil_printf("DPDMA Generic Video Example Test \r\n");
 	Status = DpdmaVideoExample(&RunCfg);
 	if (Status != XST_SUCCESS) {
@@ -97,9 +98,7 @@ int main()
 
 	xil_printf("Successfully ran DPDMA Video Example Test\r\n");
 
-        //cleanup_platform();
-
-        return XST_SUCCESS;
+    return XST_SUCCESS;
 }
 
 /*****************************************************************************/
@@ -121,21 +120,16 @@ int DpdmaVideoExample(Run_Config *RunCfgPtr)
 	u32 Status;
 	/* Initialize the application configuration */
 	InitRunConfig(RunCfgPtr);
+
 	Status = InitDpDmaSubsystem(RunCfgPtr);
 	if (Status != XST_SUCCESS) {
 				return XST_FAILURE;
 	}
 
-	xil_printf("Generating Overlay.....\n\r");
-	//GraphicsOverlay(Frame, RunCfgPtr);
-
-	/* Populate the FrameBuffer structure with the frame attributes */
-	FrameBuffer.Address = (INTPTR)Frame;
-	FrameBuffer.Stride = STRIDE;
-	FrameBuffer.LineSize = LINESIZE;
-	FrameBuffer.Size = BUFFERSIZE;
-
 	SetupInterrupts(RunCfgPtr);
+
+	// Initialize again
+	InitDpDmaSubsystem(RunCfgPtr);
 
 	return XST_SUCCESS;
 }
@@ -158,16 +152,15 @@ void InitRunConfig(Run_Config *RunCfgPtr)
 		RunCfgPtr->DpPsuPtr   = &DpPsu;
 		RunCfgPtr->IntrPtr   = &Intr;
 		RunCfgPtr->AVBufPtr  = &AVBuf;
-		RunCfgPtr->DpDmaPtr  = &DpDma;
 		RunCfgPtr->VideoMode = XVIDC_VM_1280x720_60_P;
 		RunCfgPtr->Bpc		 = XVIDC_BPC_8;
 		RunCfgPtr->ColorEncode			= XDPPSU_CENC_RGB;
 		RunCfgPtr->UseMaxCfgCaps		= 1;
 		RunCfgPtr->LaneCount			= LANE_COUNT_2;
-		RunCfgPtr->LinkRate				= LINK_RATE_540GBPS;
+		RunCfgPtr->LinkRate				= LINK_RATE_270GBPS;
 		RunCfgPtr->EnSynchClkMode		= 0;
 		RunCfgPtr->UseMaxLaneCount		= 1;
-		RunCfgPtr->UseMaxLinkRate		= 1;
+		RunCfgPtr->UseMaxLinkRate		= 0;
 }
 
 /*****************************************************************************/
@@ -189,52 +182,47 @@ int InitDpDmaSubsystem(Run_Config *RunCfgPtr)
 	XDpPsu		*DpPsuPtr = RunCfgPtr->DpPsuPtr;
 	XDpPsu_Config	*DpPsuCfgPtr;
 	XAVBuf		*AVBufPtr = RunCfgPtr->AVBufPtr;
-	XDpDma_Config *DpDmaCfgPtr;
-	XDpDma		*DpDmaPtr = RunCfgPtr->DpDmaPtr;
-
 
 	/* Initialize DisplayPort driver. */
+#ifndef SDT
 	DpPsuCfgPtr = XDpPsu_LookupConfig(DPPSU_DEVICE_ID);
+#else
+	DpPsuCfgPtr = XDpPsu_LookupConfig(DPPSU_BASEADDR);
+#endif
 	XDpPsu_CfgInitialize(DpPsuPtr, DpPsuCfgPtr, DpPsuCfgPtr->BaseAddr);
 	/* Initialize Video Pipeline driver */
+#ifndef SDT
 	XAVBuf_CfgInitialize(AVBufPtr, DpPsuPtr->Config.BaseAddr, AVBUF_DEVICE_ID);
-
-	/* Initialize the DPDMA driver */
-	DpDmaCfgPtr = XDpDma_LookupConfig(DPDMA_DEVICE_ID);
-	XDpDma_CfgInitialize(DpDmaPtr,DpDmaCfgPtr);
+#else
+	XAVBuf_CfgInitialize(AVBufPtr, DpPsuPtr->Config.BaseAddr);
+#endif
 
 	/* Initialize the DisplayPort TX core. */
 	Status = XDpPsu_InitializeTx(DpPsuPtr);
 	if (Status != XST_SUCCESS) {
 		return XST_FAILURE;
 	}
-	/* Set the format graphics frame for DPDMA*/
-	Status = XDpDma_SetGraphicsFormat(DpDmaPtr, RGBA8888);
-	if (Status != XST_SUCCESS) {
-			return XST_FAILURE;
-	}
+	/* Set the format graphics frame for Video Pipeline*/
 	Status = XAVBuf_SetInputLiveVideoFormat(AVBufPtr, RGB_12BPC);
 	if (Status != XST_SUCCESS) {
 			return XST_FAILURE;
 	}
-	/* Set the format graphics frame for Video Pipeline*/
-	Status = XAVBuf_SetInputNonLiveGraphicsFormat(AVBufPtr, RGBA8888);
-	if (Status != XST_SUCCESS) {
-			return XST_FAILURE;
-	}
-	/* Set the QOS for Video */
-	XDpDma_SetQOS(RunCfgPtr->DpDmaPtr, 11);
-	/* Enable the Buffers required by Graphics Channel */
-	XAVBuf_EnableGraphicsBuffers(RunCfgPtr->AVBufPtr, 1);
 	/* Set the output Video Format */
 	XAVBuf_SetOutputVideoFormat(AVBufPtr, RGB_8BPC);
 
-	/* Select the Input Video Sources.
-	 * Here in this example we are going to demonstrate
-	 * graphics overlay over the TPG video.
-	 */
-	XAVBuf_InputVideoSelect(AVBufPtr, XAVBUF_VIDSTREAM1_LIVE,
-                                XAVBUF_VIDSTREAM2_NONLIVE_GFX);
+	/* Select the Video/Audio input source */
+	XAVBuf_InputVideoSelect(AVBufPtr, XAVBUF_VIDSTREAM1_LIVE, XAVBUF_VIDSTREAM2_NONE);
+	XAVBuf_InputAudioSelect(AVBufPtr, XAVBUF_AUDSTREAM1_NO_AUDIO, XAVBUF_AUDSTREAM2_NO_AUDIO);
+
+	/* Set the Pixel Clock */
+	XDpPsu_MainStreamAttributes *MsaConfig = &DpPsuPtr->MsaConfig;
+	RunCfgPtr->PixClkHz = MsaConfig->PixelClockHz;
+	XAVBuf_SetPixelClock(RunCfgPtr->PixClkHz);
+
+	/* Disable Audio Buffers */
+	XAVBuf_EnableAudio0Buffers(AVBufPtr, 0);
+	XAVBuf_EnableAudio1Buffers(AVBufPtr, 0);
+
 	/* Configure Video pipeline for graphics channel */
 	XAVBuf_ConfigureGraphicsPipeline(AVBufPtr);
 	/* Configure the output video pipeline */
@@ -278,6 +266,7 @@ void SetupInterrupts(Run_Config *RunCfgPtr)
 	XDpPsu_SetHpdEventHandler(DpPsuPtr, DpPsu_IsrHpdEvent, RunCfgPtr);
 	XDpPsu_SetHpdPulseHandler(DpPsuPtr, DpPsu_IsrHpdPulse, RunCfgPtr);
 
+#ifndef SDT
 	/* Initialize interrupt controller driver. */
 	IntrCfgPtr = XScuGic_LookupConfig(INTC_DEVICE_ID);
 	XScuGic_CfgInitialize(IntrPtr, IntrCfgPtr, IntrCfgPtr->CpuBaseAddress);
@@ -289,10 +278,6 @@ void SetupInterrupts(Run_Config *RunCfgPtr)
 	/* Trigger DP interrupts on rising edge. */
 	XScuGic_SetPriorityTriggerType(IntrPtr, DPPSU_INTR_ID, 0x0, 0x03);
 
-
-	/* Connect DPDMA Interrupt */
-	XScuGic_Connect(IntrPtr, DPDMA_INTR_ID,
-			(Xil_ExceptionHandler)XDpDma_InterruptHandler, RunCfgPtr->DpDmaPtr);
 
 	/* Initialize exceptions. */
 	Xil_ExceptionInit();
@@ -307,46 +292,9 @@ void SetupInterrupts(Run_Config *RunCfgPtr)
 	/* Enable DP interrupts. */
 	XScuGic_Enable(IntrPtr, DPPSU_INTR_ID);
 	XDpPsu_WriteReg(DpPsuPtr->Config.BaseAddr, XDPPSU_INTR_EN, IntrMask);
-
-	/* Enable DPDMA Interrupts */
-	XScuGic_Enable(IntrPtr, DPDMA_INTR_ID);
-	XDpDma_InterruptEnable(RunCfgPtr->DpDmaPtr, XDPDMA_IEN_VSYNC_INT_MASK);
-
-}
-/*****************************************************************************/
-/**
-*
-* The purpose of this function is to generate a Graphics frame of the format
-* RGBA8888 which generates an overlay on 1/2 of the bottom of the screen.
-* This is just to illustrate the functionality of the graphics overlay.
-*
-* @param	RunCfgPtr is a pointer to the application configuration structure.
-* @param	Frame is a pointer to a buffer which is going to be populated with
-* 			rendered frame
-*
-* @return	Returns a pointer to the frame.
-*
-* @note		None.
-*
-*****************************************************************************/
-u8 *GraphicsOverlay(u8* Frame, Run_Config *RunCfgPtr)
-{
-	u64 Index;
-	u32 *RGBA;
-	RGBA = (u32 *) Frame;
-	/*
-		 * Red at the top half
-		 * Alpha = 0x0F
-		 * */
-	for(Index = 0; Index < (BUFFERSIZE/4) /2; Index ++) {
-		RGBA[Index] = 0x0F0000FF;
-	}
-	for(; Index < BUFFERSIZE/4; Index ++) {
-		/*
-		 * Green at the bottom half
-		 * Alpha = 0xF0
-		 * */
-		RGBA[Index] = 0xF000FF00;
-	}
-	return Frame;
+#else
+    XSetupInterruptSystem(RunCfgPtr->DpPsuPtr, &XDpPsu_HpdInterruptHandler, RunCfgPtr->DpPsuPtr->Config.IntrId,
+            RunCfgPtr->DpPsuPtr->Config.IntrParent, XINTERRUPT_DEFAULT_PRIORITY);
+	XDpPsu_WriteReg(DpPsuPtr->Config.BaseAddr, XDPPSU_INTR_EN, IntrMask);
+#endif
 }

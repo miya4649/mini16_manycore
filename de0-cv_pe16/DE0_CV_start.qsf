@@ -25,7 +25,7 @@ set_global_assignment -name VERILOG_FILE ../rw_port_ram.v
 set_global_assignment -name VERILOG_FILE ../uart.v
 set_global_assignment -name VERILOG_FILE ../uart_io.v
 set_global_assignment -name VERILOG_FILE ../dual_clk_ram.v
-set_global_assignment -name VERILOG_FILE ../shift_register_vector.v
+set_global_assignment -name VERILOG_FILE ../shift_register.v
 set_global_assignment -name VERILOG_FILE ../sprite.v
 set_global_assignment -name VERILOG_FILE ../vga_iface.v
 set_global_assignment -name VERILOG_FILE ../cdc_synchronizer.v
