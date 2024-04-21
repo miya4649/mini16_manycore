@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2017, 2019 miya
+  Copyright (c) 2017, miya
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -13,6 +13,16 @@
   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
+/*
+ Usage:
+
+ Tx: Wait for 'busy' == 0, set 'data_tx' and set 1 to the 'start' signal.
+
+ Rx: Read 'data_rx' at the rising edge of the 're' signal
+ 
+ ver. 2024/04/21
+ */
+
 module uart
   #(
     parameter CLK_HZ = 50000000,
@@ -20,15 +30,15 @@ module uart
     parameter WIDTH = 8
     )
   (
-   input              clk,
-   input              reset,
-   input              rxd,
-   input              start,
-   input [WIDTH-1:0]  data_tx,
-   output             txd,
-   output reg         busy,
-   output reg         re,
-   output [WIDTH-1:0] data_rx
+   input wire              clk,
+   input wire              reset,
+   input wire              rxd,
+   input wire              start,
+   input wire [WIDTH-1:0]  data_tx,
+   output wire             txd,
+   output reg              busy,
+   output reg              re,
+   output wire [WIDTH-1:0] data_rx
    );
 
   localparam TRUE = 1'b1;
@@ -91,22 +101,22 @@ module uart
       else
         begin
           case (tx_state)
-            0:
+            ZERO:
               begin
-                if (start == TRUE)
+                if ((start == TRUE) && (busy == FALSE))
                   begin
                     txd_counter <= ZERO;
                     busy <= TRUE;
-                    tx_state <= 1;
+                    tx_state <= ONE;
                   end
                 else
                   begin
                     txd_counter <= (WIDTH + 1);
                     busy <= FALSE;
-                    tx_state <= 0;
+                    tx_state <= ZERO;
                   end
               end
-            1:
+            ONE:
               begin
                 if (tx_counter == ZERO)
                   begin
@@ -114,20 +124,20 @@ module uart
                       begin
                         txd_counter <= (WIDTH + 1);
                         busy <= FALSE;
-                        tx_state <= 0;
+                        tx_state <= ZERO;
                       end
                     else
                       begin
                         txd_counter <= txd_counter + ONE;
                         busy <= TRUE;
-                        tx_state <= 1;
+                        tx_state <= ONE;
                       end
                   end
                 else
                   begin
                     txd_counter <= txd_counter;
                     busy <= TRUE;
-                    tx_state <= 1;
+                    tx_state <= ONE;
                   end
               end
           endcase
@@ -158,13 +168,13 @@ module uart
         end
       else
         begin
-          if ((rx_state != 0) && (rx_counter != ZERO))
+          if ((rx_state != ZERO) && (rx_counter != ZERO))
             begin
               rx_counter <= rx_counter - ONE;
             end
           else
             begin
-              if (rx_state == 0)
+              if (rx_state == ZERO)
                 begin
                   rx_counter <= WAIT_HALF;
                 end
@@ -178,7 +188,7 @@ module uart
 
   always @(posedge clk)
     begin
-      if (rx_state == 0)
+      if (rx_state == ZERO)
         begin
           rxd_counter <= ZERO;
         end
@@ -207,39 +217,39 @@ module uart
       else
         begin
           case (rx_state)
-            0:
+            ZERO:
               begin
                 if (rxd_sync == START_BIT)
                   begin
                     re <= FALSE;
-                    rx_state <= 1;
+                    rx_state <= ONE;
                   end
                 else
                   begin
                     re <= re;
-                    rx_state <= 0;
+                    rx_state <= ZERO;
                   end
               end
-            1:
+            ONE:
               begin
                 if (rx_counter == ZERO)
                   begin
                     if (rxd_counter == (WIDTH + 1))
                       begin
                         re <= TRUE;
-                        rx_state <= 0;
+                        rx_state <= ZERO;
                       end
                     else
                       begin
                         data_rx_buf[rxd_counter] <= rxd_sync;
                         re <= FALSE;
-                        rx_state <= 1;
+                        rx_state <= ONE;
                       end
                   end
                 else
                   begin
                     re <= FALSE;
-                    rx_state <= 1;
+                    rx_state <= ONE;
                   end
               end
           endcase

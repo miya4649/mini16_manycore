@@ -115,7 +115,7 @@ module vga_iface
   // clip
   generate
     if (CLIP_ENABLE == 1)
-      begin: clip_block1
+      begin: clip_block
         wire clip;
         wire clip_delay;
         assign clip = ((count_v >= CLIP_V_S) && (count_v < CLIP_V_E) && (count_h >= CLIP_H_S) && (count_h < CLIP_H_E)) ? 1'b1 : 1'b0;
@@ -133,7 +133,7 @@ module vga_iface
            );
       end
     else
-      begin: clip_block2
+      begin: clip_block
         assign pixel_en = pixel_valid_delay;
       end
   endgenerate

@@ -17,7 +17,6 @@
 //`define USE_UART
 `define USE_VGA
 `define DEBUG
-`define RAM_TYPE_DISTRIBUTED "distributed"
 
 module testbench;
 
@@ -37,8 +36,8 @@ module testbench;
   localparam DEPTH_FIFO = 3;
   localparam VRAM_WIDTH_BITS = 6;
   localparam VRAM_HEIGHT_BITS = 7;
-  localparam PE_REGFILE_RAM_TYPE = "distributed";
-  localparam PE_M2S_RAM_TYPE = "distributed";
+  localparam PE_REGFILE_RAM_TYPE = "auto";
+  localparam PE_M2S_RAM_TYPE = "auto";
   localparam PE_DEPTH_REG = 4;
   localparam PE_ENABLE_MUL = FALSE;
   localparam PE_ENABLE_MULTI_BIT_SHIFT = FALSE;
@@ -61,7 +60,7 @@ module testbench;
   localparam PE_ENABLE_WA = TRUE;
 `endif
 
-  localparam PE_FIFO_RAM_TYPE = "distributed";
+  localparam PE_FIFO_RAM_TYPE = "auto";
   localparam PE_ENABLE_MVIL = TRUE;
   localparam UART_CLK_HZ = 50000000;
   localparam UART_SCLK_HZ = 115200;

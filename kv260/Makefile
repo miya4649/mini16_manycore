@@ -4,10 +4,13 @@ VIVADO = $(XILINX_VIVADO)/bin/vivado
 VITIS = $(XILINX_VITIS)/bin/vitis
 RM = rm -rf
 
-all: asm vivado vivado-run vitis
+all: asm tool vivado vivado-run vitis
 
 asm:
-	make -C ../asm c96
+	make -C ../asm kv260
+
+tool:
+	make -C ../tools
 
 vivado:
 	$(VIVADO) -mode batch -notrace -source vivado.tcl

@@ -32,13 +32,15 @@ module rtl_top
    input wire         resetn
    );
 
-  localparam CORES = 96;
+  localparam CORES = 144;
   localparam UART_CLK_HZ = 200000000;
   localparam UART_SCLK_HZ = 115200;
-  localparam WIDTH_D = 32;
-  localparam DEPTH_I = 12;
-  localparam DEPTH_D = 12;
+  localparam DEPTH_P_I = 8;
+  localparam DEPTH_P_D = 5;
+  localparam DEPTH_M2S = 4;
+
   localparam VRAM_BPP = 3;
+  localparam PE_FIFO_RAM_TYPE = "xi_distributed";
 
   localparam ZERO = 1'd0;
   localparam ONE = 1'd1;
@@ -86,8 +88,13 @@ module rtl_top
   mini16_soc
     #(
       .CORES (CORES),
+      .PE_FIFO_RAM_TYPE (PE_FIFO_RAM_TYPE),
       .UART_CLK_HZ (UART_CLK_HZ),
-      .UART_SCLK_HZ (UART_SCLK_HZ)
+      .UART_SCLK_HZ (UART_SCLK_HZ),
+      .DEPTH_P_I (DEPTH_P_I),
+      .DEPTH_P_D (DEPTH_P_D),
+      .DEPTH_M2S (DEPTH_M2S),
+      .VRAM_RAM_TYPE ("auto")
       )
   mini16_soc_0
     (

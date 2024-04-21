@@ -15,7 +15,6 @@
 
 `define USE_UART
 `define USE_VGA
-`define RAM_TYPE_DISTRIBUTED "MLAB"
 
 module top
   (
@@ -41,6 +40,7 @@ module top
   localparam CORES = 170;
   localparam UART_CLK_HZ = 100800000;
   localparam UART_SCLK_HZ = 115200;
+  localparam PE_FIFO_RAM_TYPE = "al_mlab";
 
   wire [15:0]   led;
   assign USER_LED = ~led;
@@ -112,6 +112,7 @@ module top
   mini16_soc
     #(
       .CORES (CORES),
+      .PE_FIFO_RAM_TYPE (PE_FIFO_RAM_TYPE),
       .UART_CLK_HZ (UART_CLK_HZ),
       .UART_SCLK_HZ (UART_SCLK_HZ)
       )

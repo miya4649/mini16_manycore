@@ -19,6 +19,9 @@ c64: $(OBJS)
 c96: $(OBJS)
 	java AsmTop --cores=96
 
+kv260: $(OBJS)
+	java AsmTop --cores=144 --depth_p_i=8 --depth_p_d=5 --depth_m2s=4
+
 c128: $(OBJS)
 	java AsmTop --cores=128
 

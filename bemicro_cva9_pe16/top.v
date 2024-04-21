@@ -15,7 +15,6 @@
 
 `define USE_UART
 `define USE_VGA
-`define RAM_TYPE_DISTRIBUTED "MLAB"
 
 module top
   (
@@ -47,9 +46,9 @@ module top
   localparam DEPTH_FIFO = 3;
   localparam VRAM_WIDTH_BITS = 6;
   localparam VRAM_HEIGHT_BITS = 7;
-  localparam PE_REGFILE_RAM_TYPE = "distributed";
-  localparam PE_FIFO_RAM_TYPE = "distributed";
-  localparam PE_M2S_RAM_TYPE = "distributed";
+  localparam PE_REGFILE_RAM_TYPE = "al_mlab";
+  localparam PE_FIFO_RAM_TYPE = "al_mlab";
+  localparam PE_M2S_RAM_TYPE = "al_mlab";
   localparam PE_DEPTH_REG = 4;
   localparam PE_ENABLE_MVIL = TRUE;
   localparam PE_ENABLE_MUL = FALSE;

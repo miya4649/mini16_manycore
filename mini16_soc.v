@@ -33,8 +33,9 @@ module mini16_soc
     parameter VRAM_HEIGHT_BITS = 9,
     parameter MASTER_REGFILE_RAM_TYPE = "auto",
     parameter PE_REGFILE_RAM_TYPE = "auto",
-    parameter PE_FIFO_RAM_TYPE = "distributed",
+    parameter PE_FIFO_RAM_TYPE = "auto",
     parameter PE_M2S_RAM_TYPE = "auto",
+    parameter VRAM_RAM_TYPE = "auto",
     parameter PE_DEPTH_REG = 5,
     parameter PE_ENABLE_MVIL = 1'b1,
     parameter PE_ENABLE_MUL = 1'b1,
@@ -432,11 +433,12 @@ module mini16_soc
   wire [32-1:0]         ext_vga_count_v;
 
   sprite
-   #(
-    .SPRITE_WIDTH_BITS (VRAM_WIDTH_BITS),
-    .SPRITE_HEIGHT_BITS (VRAM_HEIGHT_BITS),
-    .BPP (SPRITE_BPP)
-    )
+    #(
+      .SPRITE_WIDTH_BITS (VRAM_WIDTH_BITS),
+      .SPRITE_HEIGHT_BITS (VRAM_HEIGHT_BITS),
+      .BPP (SPRITE_BPP),
+      .RAM_TYPE (VRAM_RAM_TYPE)
+      )
   sprite_0
     (
      .clk (clk),

@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2016 miya
+  Copyright (c) 2016, miya
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -13,34 +13,35 @@
   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// ver. 2024/03/31
+// ver. 2024/04/21
 
 module sprite
   #(
     parameter SPRITE_WIDTH_BITS = 6,
     parameter SPRITE_HEIGHT_BITS = 7,
-    parameter BPP = 8
+    parameter BPP = 8,
+    parameter RAM_TYPE = "auto"
     )
   (
-   input                       clk,
-   input                       reset,
+   input wire                 clk,
+   input wire                 reset,
 
-   output signed [32-1:0]      bitmap_length,
-   input signed [32-1:0]       bitmap_address,
-   input signed [BPP-1:0]      bitmap_din,
-   output signed [BPP-1:0]     bitmap_dout,
-   input                       bitmap_we,
-   input                       bitmap_oe,
+   output wire [32-1:0]       bitmap_length,
+   input wire [32-1:0]        bitmap_address,
+   input wire [BPP-1:0]       bitmap_din,
+   output wire [BPP-1:0]      bitmap_dout,
+   input wire                 bitmap_we,
+   input wire                 bitmap_oe,
 
-   input signed [32-1:0]       x,
-   input signed [32-1:0]       y,
-   input signed [32-1:0]       scale,
+   input wire signed [32-1:0] x,
+   input wire signed [32-1:0] y,
+   input wire signed [32-1:0] scale,
 
-   input                       ext_clkv,
-   input                       ext_resetv,
-   output reg signed [BPP-1:0] ext_color,
-   input signed [32-1:0]       ext_count_h,
-   input signed [32-1:0]       ext_count_v
+   input wire                 ext_clkv,
+   input wire                 ext_resetv,
+   output reg [BPP-1:0]       ext_color,
+   input wire signed [32-1:0] ext_count_h,
+   input wire signed [32-1:0] ext_count_v
    );
 
   localparam OFFSET_BITS = 16;
@@ -75,8 +76,9 @@ module sprite
   wire signed [OFFSET_BITS-1:0]           y_sync;
   wire [SCALE_BITS_BITS-1:0]              scale_sync;
   reg [SCALE_BITS_BITS-1:0]               scale_sync_d1;
-  reg signed [BPP-1:0]                    color_d6;
-  reg signed [BPP-1:0]                    color_d7;
+  reg [BPP-1:0]                           color_d6;
+  reg [BPP-1:0]                           color_d7;
+  reg [BPP-1:0]                           color_d8;
 
   always @(posedge ext_clkv)
     begin
@@ -88,14 +90,16 @@ module sprite
       bitmap_raddr_d3 <= {dy1_d2[SPRITE_HEIGHT_BITS-1:0], {SPRITE_WIDTH_BITS{1'b0}}} + dx1_d2[SPRITE_WIDTH_BITS-1:0];
       color_d6 <= bitmap_color_d5;
       color_d7 <= color_d6;
-      ext_color <= vp_sprite_inside_d7 ? color_d7: 1'd0; // ext_color: delay 8
+      color_d8 <= vp_sprite_inside_d7 ? color_d7: 1'd0;
+      ext_color <= color_d8; // ext_color: delay 9
     end
 
   // bitmap
   dual_clk_ram
     #(
       .DATA_WIDTH (BPP),
-      .ADDR_WIDTH (ADDR_BITS)
+      .ADDR_WIDTH (ADDR_BITS),
+      .RAM_TYPE (RAM_TYPE)
       )
   dual_clk_ram_0
     (

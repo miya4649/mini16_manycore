@@ -125,6 +125,7 @@ public class AsmLib extends Asm
     opts.setDefault("cores", 32);
     opts.setDefault("width_p_d", 32);
     opts.setDefault("depth_p_i", 10);
+    opts.setDefault("depth_p_d", 8);
     opts.setDefault("depth_m2s", 8);
     opts.setDefault("image_width_bits", 8);
     opts.setDefault("image_height_bits", 8);
@@ -158,7 +159,7 @@ public class AsmLib extends Asm
     DEPTH_M_I = 11;
     DEPTH_M_D = 11;
     DEPTH_P_I = opts.getIntValue("depth_p_i");
-    DEPTH_P_D = 8;
+    DEPTH_P_D = opts.getIntValue("depth_p_d");
     DEPTH_M2S = opts.getIntValue("depth_m2s");
     DEPTH_S2M = 9;
     DEPTH_U2M = 11;

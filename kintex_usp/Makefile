@@ -1,18 +1,23 @@
-ROMS=$(wildcard ../*_code_mem.v ../*_data_mem.v ../*_code.bin ../*_data.bin)
+PROJECT = project_1
+VIVADO = $(XILINX_VIVADO)/bin/vivado
+RM = rm -rf
 
-all: program
+all: asm vivado vivado-run
 
-run: program tool
-	make -C ../tools run
-
-tool:
-	make -C ../tools
-
-program:
+asm:
 	make -C ../asm c128
 
-clean:
-	make -C ../asm clean
-	make -C ../tools clean
+vivado:
+	$(VIVADO) -mode batch -notrace -source vivado.tcl
 
-	rm -f $(ROMS)
+vivado-run:
+	$(VIVADO) -mode batch -notrace -source vivado-run.tcl
+
+run:
+	make -C ../tools run
+
+clean:
+	$(RM) $(PROJECT) vivado.log vivado*.jou .Xil *dynamic* *.log *.xpe .gitignore .lock .peers.ini
+	rm -rf $(PROJECT).cache $(PROJECT).gen $(PROJECT).hw $(PROJECT).ip_user_files $(PROJECT).runs $(PROJECT).sim
+	make -C ../tools clean
+	make -C ../asm clean
