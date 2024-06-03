@@ -25,6 +25,6 @@ run:
 	make -C ../tools run
 
 clean:
-	$(RM) $(PROJECT) $(VITIS_WORKSPACE) $(VITIS_CLASSIC_WORKSPACE) vivado.log vivado*.jou .Xil *dynamic* *.log *.xpe .gitignore .lock .peers.ini
+	$(RM) $(PROJECT) $(VITIS_WORKSPACE) vivado.log vivado*.jou .Xil *dynamic* *.log *.xpe .gitignore .lock .peers.ini
 	make -C ../tools clean
 	make -C ../asm clean
