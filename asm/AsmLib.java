@@ -235,7 +235,7 @@ public class AsmLib extends Asm
     int addr = addr_abs(name);
     if (addr > MVIL_ADDR_LIMIT)
     {
-      print_error("lib_ba: exceed address limit");
+      print_error("lib_ba: exceeds address limit");
     }
     lib_mvil(addr);
     lib_wait_ds_pre();
@@ -250,7 +250,7 @@ public class AsmLib extends Asm
     int addr = addr_abs(name);
     if (addr > MVIL_ADDR_LIMIT)
     {
-      print_error("lib_bc: exceed address limit");
+      print_error("lib_bc: exceeds address limit");
     }
     lib_mvil(addr);
     lib_wait_ds_pre();
@@ -265,7 +265,7 @@ public class AsmLib extends Asm
     int addr = addr_abs(name);
     if (addr > MVIL_ADDR_LIMIT)
     {
-      print_error("lib_call: exceed address limit");
+      print_error("lib_call: exceeds address limit");
     }
     lib_mvil(addr);
     lib_wait_ds_pre();
@@ -276,6 +276,7 @@ public class AsmLib extends Asm
   // initialize stack
   public void lib_init_stack()
   {
+    /* prerequisite: mem_d depth <= 11 */
     lib_mvil(STACK_ADDRESS);
     lib_wait_dep_pre();
     as_mv(SP_REG_STACK_POINTER, SP_REG_MVIL);
@@ -288,7 +289,7 @@ public class AsmLib extends Asm
     int addr = addr_abs(name);
     if (addr > MVIL_ADDR_LIMIT)
     {
-      print_error("lib_ld: exceed address limit");
+      print_error("lib_ld: exceeds address limit");
     }
     lib_mvil(addr);
     as_ld(reg, SP_REG_MVIL);
@@ -308,7 +309,7 @@ public class AsmLib extends Asm
     int addr = addr_abs(name);
     if (addr > MVIL_ADDR_LIMIT)
     {
-      print_error("lib_st: exceed address limit");
+      print_error("lib_st: exceeds address limit");
     }
     lib_mvil(addr);
     as_st(SP_REG_MVIL, reg);
@@ -696,6 +697,10 @@ public class AsmLib extends Asm
 
   public void lib_sli(int reg_d, int shift_width)
   {
+    if ((shift_width < 0) || (shift_width > 15))
+    {
+      print_error("lib_sli: shift_width exceeds limit 0 to 15");
+    }
     if (ENABLE_MULTI_BIT_SHIFT == 1)
     {
       as_sli(reg_d, shift_width);
@@ -746,6 +751,10 @@ public class AsmLib extends Asm
 
   public void lib_sri(int reg_d, int shift_width)
   {
+    if ((shift_width < 0) || (shift_width > 15))
+    {
+      print_error("lib_sri: shift_width exceeds limit 0 to 15");
+    }
     if (ENABLE_MULTI_BIT_SHIFT == 1)
     {
       as_sri(reg_d, shift_width);
@@ -805,6 +814,10 @@ public class AsmLib extends Asm
 
   public void lib_srai(int reg_d, int shift_width)
   {
+    if ((shift_width < 0) || (shift_width > 15))
+    {
+      print_error("lib_srai: shift_width exceeds limit 0 to 15");
+    }
     if (ENABLE_MULTI_BIT_SHIFT == 1)
     {
       as_srai(reg_d, shift_width);
@@ -905,7 +918,7 @@ public class AsmLib extends Asm
     as_sub(LREG3, LREG1);
     lib_wait_dep_post();
     lib_wait_dep_pre();
-    as_cnm(SP_REG_CP, LREG1);
+    as_cnm(SP_REG_CP, LREG3);
     lib_wait_dep_post();
     lib_bc("f_uart_hex_L1");
     lib_wait_dep_pre();
@@ -921,7 +934,7 @@ public class AsmLib extends Asm
   public void f_uart_hex_word()
   {
     // uart put hex word
-    // input: r3:value (32bit)
+    // input: r3:value
     // output: none
     // modify: r3
     // depend: f_uart_char, f_uart_hex
@@ -929,7 +942,7 @@ public class AsmLib extends Asm
     /*
     push(r4 to r6);
     r4 = r3;
-    r5 = 28;
+    r5 = WIDTH_M_D - 4;
     do
     {
       r6 = r4;
@@ -942,7 +955,7 @@ public class AsmLib extends Asm
     lib_push(SP_REG_LINK);
     lib_push_regs(R4, 3);
     as_mv(R4, R3);
-    lib_set_im(R5, 28);
+    lib_set_im(R5, WIDTH_M_D - 4);
     label("f_uart_hex_word_L_0");
     lib_wait_dep_pre();
     as_mv(R6, R4);
@@ -962,12 +975,14 @@ public class AsmLib extends Asm
   public void f_uart_hex_word_ln()
   {
     // uart register monitor
-    // input: r3:value (32bit)
+    // input: r3:value
     // output: none
     // depend: f_uart_hex_word, f_uart_hex, f_uart_char
     label("f_uart_hex_word_ln");
     lib_push(SP_REG_LINK);
     lib_call("f_uart_hex_word");
+    as_mvi(R3, 13);
+    lib_call("f_uart_char");
     as_mvi(R3, 10);
     lib_call("f_uart_char");
     lib_pop(SP_REG_LINK);
@@ -1013,6 +1028,8 @@ public class AsmLib extends Asm
     as_addi(R5, 1);
     as_subi(R4, 1);
     lib_call("f_uart_hex_word");
+    as_mvi(R3, 13);
+    lib_call("f_uart_char");
     as_mvi(R3, 10);
     lib_call("f_uart_char");
     as_cnz(SP_REG_CP, R4);

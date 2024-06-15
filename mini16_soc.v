@@ -240,7 +240,7 @@ module mini16_soc
         end
       else
         begin
-          if ((master_d_we == TRUE) && (master_d_w_addr == ((MASTER_W_BANK_IO_REG << DEPTH_B_M_W) + IO_REG_W_UART)))
+          if ((io_reg_we == TRUE) && (io_reg_w_addr == IO_REG_W_UART))
             begin
               uart_io_tx_we <= TRUE;
             end

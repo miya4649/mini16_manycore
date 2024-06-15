@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2015-2019, miya
+  Copyright (c) 2015, miya
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -516,7 +516,7 @@ public class Asm
 
   public void as_sri(int reg_d, int reg_a)
   {
-    check_limit(reg_a, -16, 15, "sri");
+    check_limit(reg_a, 0, 15, "sri");
     set_inst_normal(reg_d, reg_a, 1, I_SR);
   }
 
@@ -527,7 +527,7 @@ public class Asm
 
   public void as_sli(int reg_d, int reg_a)
   {
-    check_limit(reg_a, -16, 15, "sli");
+    check_limit(reg_a, 0, 15, "sli");
     set_inst_normal(reg_d, reg_a, 1, I_SL);
   }
 
@@ -538,7 +538,7 @@ public class Asm
 
   public void as_srai(int reg_d, int reg_a)
   {
-    check_limit(reg_a, -16, 15, "srai");
+    check_limit(reg_a, 0, 15, "srai");
     set_inst_normal(reg_d, reg_a, 1, I_SRA);
   }
 

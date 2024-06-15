@@ -20,7 +20,7 @@
 
  Rx: Read 'data_rx' at the rising edge of the 're' signal
  
- ver. 2024/04/21
+ ver. 2024/06/01
  */
 
 module uart
@@ -30,15 +30,15 @@ module uart
     parameter WIDTH = 8
     )
   (
-   input wire              clk,
-   input wire              reset,
-   input wire              rxd,
-   input wire              start,
-   input wire [WIDTH-1:0]  data_tx,
-   output wire             txd,
-   output reg              busy,
-   output reg              re,
-   output wire [WIDTH-1:0] data_rx
+   input wire             clk,
+   input wire             reset,
+   input wire             rxd,
+   input wire             start,
+   input wire [WIDTH-1:0] data_tx,
+   output wire            txd,
+   output reg             busy,
+   output reg             re,
+   output reg [WIDTH-1:0] data_rx
    );
 
   localparam TRUE = 1'b1;
@@ -205,7 +205,6 @@ module uart
         end
     end
 
-  assign data_rx = data_rx_buf[WIDTH:1];
   always @(posedge clk)
     begin
       if (reset == TRUE)
@@ -213,6 +212,7 @@ module uart
           rx_state <= ZERO;
           data_rx_buf <= ZERO;
           re <= FALSE;
+          data_rx <= ZERO;
         end
       else
         begin
@@ -238,6 +238,7 @@ module uart
                       begin
                         re <= TRUE;
                         rx_state <= ZERO;
+                        data_rx <= data_rx_buf[WIDTH:1];
                       end
                     else
                       begin

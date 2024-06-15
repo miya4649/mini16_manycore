@@ -1,5 +1,5 @@
 /*
-  Copyright (c) 2018-2019, miya
+  Copyright (c) 2018, miya
   All rights reserved.
 
   Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -63,7 +63,7 @@ module testbench;
   localparam PE_FIFO_RAM_TYPE = "auto";
   localparam PE_ENABLE_MVIL = TRUE;
   localparam UART_CLK_HZ = 50000000;
-  localparam UART_SCLK_HZ = 115200;
+  localparam UART_SCLK_HZ = 5000000;
 
   reg clk;
   reg reset;
@@ -72,6 +72,8 @@ module testbench;
   // uart
   wire uart_txd;
   wire uart_rxd;
+  wire uart_re;
+  wire [7:0] uart_data_rx;
 `endif
 `ifdef USE_VGA
   localparam VRAM_BPP = 3;
@@ -86,7 +88,7 @@ module testbench;
     begin
       $dumpfile("wave.vcd");
       $dumpvars(10, testbench);
-      $monitor("time: %d reset: %d led: %d", $time, reset, led);
+      $monitor("time: %d reset: %d led: %d uart_re: %d uart_data_rx: %c", $time, reset, led, uart_re, uart_data_rx);
       for (i = 0; i < (1 << DEPTH_REG); i = i + 1)
         begin
           $dumpvars(0, testbench.mini16_soc_0.mini16_cpu_master.reg_file.rw_port_ram_a.gen.ram[i]);
@@ -199,5 +201,26 @@ module testbench;
 `endif
      .led (led)
      );
+
+`ifdef USE_UART
+  uart
+    #(
+      .CLK_HZ (UART_CLK_HZ),
+      .SCLK_HZ (UART_SCLK_HZ),
+      .WIDTH (8)
+      )
+  uart_0
+    (
+     .clk (clk),
+     .reset (reset),
+     .rxd (uart_txd),
+     .start (),
+     .data_tx (),
+     .txd (),
+     .busy (),
+     .re (uart_re),
+     .data_rx (uart_data_rx)
+     );
+`endif
 
 endmodule

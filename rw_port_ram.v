@@ -13,7 +13,7 @@
   PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-// ver. 2024/04/21
+// ver. 2024/06/01
 
 module rw_port_ram
   #(
@@ -32,7 +32,7 @@ module rw_port_ram
 
   generate
     if (RAM_TYPE == "xi_distributed")
-      begin
+      begin: gen
         (* ram_style = "distributed" *) reg [DATA_WIDTH-1:0] ram [0:(1 << ADDR_WIDTH)-1];
         always @(posedge clk)
           begin
@@ -44,7 +44,7 @@ module rw_port_ram
           end
       end
     else if (RAM_TYPE == "xi_block")
-      begin
+      begin: gen
         (* ram_style = "block" *) reg [DATA_WIDTH-1:0] ram [0:(1 << ADDR_WIDTH)-1];
         always @(posedge clk)
           begin
@@ -56,7 +56,7 @@ module rw_port_ram
           end
       end
     else if (RAM_TYPE == "xi_register")
-      begin
+      begin: gen
         (* ram_style = "register" *) reg [DATA_WIDTH-1:0] ram [0:(1 << ADDR_WIDTH)-1];
         always @(posedge clk)
           begin
@@ -68,7 +68,7 @@ module rw_port_ram
           end
       end
     else if (RAM_TYPE == "xi_ultra")
-      begin
+      begin: gen
         (* ram_style = "ultra" *) reg [DATA_WIDTH-1:0] ram [0:(1 << ADDR_WIDTH)-1];
         always @(posedge clk)
           begin
@@ -80,7 +80,7 @@ module rw_port_ram
           end
       end
     else if (RAM_TYPE == "al_logic")
-      begin
+      begin: gen
         (* ramstyle = "logic" *) reg [DATA_WIDTH-1:0] ram [0:(1 << ADDR_WIDTH)-1];
         always @(posedge clk)
           begin
@@ -92,7 +92,7 @@ module rw_port_ram
           end
       end
     else if (RAM_TYPE == "al_mlab")
-      begin
+      begin: gen
         (* ramstyle = "MLAB" *) reg [DATA_WIDTH-1:0] ram [0:(1 << ADDR_WIDTH)-1];
         always @(posedge clk)
           begin
@@ -104,7 +104,7 @@ module rw_port_ram
           end
       end
     else
-      begin
+      begin: gen
         reg [DATA_WIDTH-1:0] ram [0:(1 << ADDR_WIDTH)-1];
         always @(posedge clk)
           begin
