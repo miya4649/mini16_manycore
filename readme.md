@@ -22,6 +22,8 @@ with UART, VGA interface
 
 501 cores implemented, Fmax: 100 MHz / BeMicro-CVA9
 
+DE0-CV and BeMicro-CVA9 projects are included in the mini16cpu_core branch.
+
 ## Documents and Latest Version (Japanese):
 
 http://cellspe.matrix.jp/zerofpga/mini16_manycore.html

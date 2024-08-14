@@ -1,17 +1,5 @@
-/*
-  Copyright (c) 2019, miya
-  All rights reserved.
-
-  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// SPDX-License-Identifier: BSD-2-Clause
+// Copyright (c) 2019 miya All rights reserved.
 
 import java.lang.Math;
 
@@ -40,6 +28,8 @@ public class MasterProgram extends AsmLib
     label("f_get_m2s_bc_addr");
     lib_set_im(m2s_bc_addr, M2S_BC_ADDR_H);
     as_sli(m2s_bc_addr, M2S_BC_ADDR_SHIFT);
+    lib_nop(2);
+    as_mvsi(m2s_bc_addr, MVS_SL);
     lib_return();
   }
 
@@ -53,13 +43,12 @@ public class MasterProgram extends AsmLib
     // m2s_core_addr = ((core_id + PE_ID_START) << DEPTH_B_M_W) + (M2S_BANK_M2S << DEPTH_B_M2S);
     label("f_get_m2s_core_addr");
     as_addi(core_id, PE_ID_START);
-    lib_wait_dep_pre();
     as_mvi(tmp0, M2S_BANK_M2S);
-    lib_wait_dep_post();
     as_sli(m2s_core_addr, DEPTH_B_M_W);
-    lib_wait_dep_pre();
     as_sli(tmp0, DEPTH_B_M2S);
-    lib_wait_dep_post();
+    as_nop();
+    as_mvsi(m2s_core_addr, MVS_SL);
+    as_mvsi(tmp0, MVS_SL);
     as_add(m2s_core_addr, tmp0);
     lib_return();
   }
@@ -72,6 +61,8 @@ public class MasterProgram extends AsmLib
     label("f_get_s2m_addr");
     lib_set_im(s2m_addr, S2M_ADDR_H);
     as_sli(s2m_addr, S2M_ADDR_SHIFT);
+    lib_nop(2);
+    as_mvsi(s2m_addr, MVS_SL);
     lib_return();
   }
 
@@ -84,9 +75,9 @@ public class MasterProgram extends AsmLib
     // io_reg_w_addr = (IO_REG_W_ADDR_H << IO_REG_W_ADDR_SHIFT) + R3;
     label("f_get_io_reg_w_addr");
     lib_set_im(tmp0, IO_REG_W_ADDR_H);
-    lib_wait_dep_pre();
     as_sli(tmp0, IO_REG_W_ADDR_SHIFT);
-    lib_wait_dep_post();
+    lib_nop(2);
+    as_mvsi(tmp0, MVS_SL);
     as_add(io_reg_w_addr, tmp0);
     lib_return();
   }
@@ -100,9 +91,9 @@ public class MasterProgram extends AsmLib
     // io_reg_r_addr = (IO_REG_R_ADDR_H << IO_REG_R_ADDR_SHIFT) + R3;
     label("f_get_io_reg_r_addr");
     lib_set_im(tmp0, IO_REG_R_ADDR_H);
-    lib_wait_dep_pre();
     as_sli(tmp0, IO_REG_R_ADDR_SHIFT);
-    lib_wait_dep_post();
+    lib_nop(2);
+    as_mvsi(tmp0, MVS_SL);
     as_add(io_reg_r_addr, tmp0);
     lib_return();
   }
@@ -115,6 +106,8 @@ public class MasterProgram extends AsmLib
     label("f_get_u2m_addr");
     lib_set_im(u2m_addr, U2M_ADDR_H);
     as_sli(u2m_addr, U2M_ADDR_SHIFT);
+    lib_nop(2);
+    as_mvsi(u2m_addr, MVS_SL);
     lib_return();
   }
 
@@ -137,24 +130,17 @@ public class MasterProgram extends AsmLib
     int led = 6;
     as_nop();
     lib_init_stack();
-    lib_set_im(R3, IO_REG_W_LED);
+    as_mvil(IO_REG_W_LED);
+    as_mv(led_addr, SP_REG_MVIL);
     lib_call("f_get_io_reg_w_addr");
     as_mvi(counter, 0);
     lib_set_im(shift, 18);
-    lib_wait_dep_pre();
-    as_sli(led_addr, DEPTH_B_M_W);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_addi(led_addr, IO_REG_W_LED);
-    lib_wait_dep_post();
     label("example_led_L_0");
     as_mv(led, counter);
-    lib_wait_dep_pre();
-    as_addi(counter, 1);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_sr(led, shift);
-    lib_wait_dep_post();
+    as_addi(counter, 1);
+    as_nop();
+    as_mvsi(led, MVS_SR);
     as_st(led_addr, led);
     lib_ba("example_led_L_0");
     // link library
@@ -164,19 +150,22 @@ public class MasterProgram extends AsmLib
   private void example_helloworld()
   {
     as_nop();
-    lib_call("f_get_u2m_data");
+    int from_u2m = 1;
+    if (from_u2m == 1)
+    {
+      lib_call("f_get_u2m_data");
+    }
     lib_init_stack();
-    lib_wait_dep_pre();
-    as_mvi(R4, MASTER_R_BANK_U2M);
-    lib_wait_dep_post();
+    as_mvi(R4, MASTER_R_BANK_MEM_D);
     as_sli(R4, DEPTH_B_M_R);
     lib_set_im(R3, addr_abs("d_helloworld"));
+    as_mvsi(R4, MVS_SL);
     as_add(R3, R4);
-    lib_call("f_uart_print");
+    lib_call("f_uart_print_32");
     lib_call("f_halt");
     // link library
     f_uart_char();
-    f_uart_print();
+    f_uart_print_32();
     f_halt();
     f_get_u2m_data();
   }
@@ -184,7 +173,14 @@ public class MasterProgram extends AsmLib
   private void example_helloworld_data()
   {
     label("d_helloworld");
-    string_data32("Hello, world!\n");
+    if (WIDTH_M_D == 32)
+    {
+      string_data32("Hello, world!\r\n");
+    }
+    else
+    {
+      string_data16("Hello, world!\r\n");
+    }
   }
 
   private void f_reset_pe()
@@ -193,24 +189,17 @@ public class MasterProgram extends AsmLib
     addr_reset = MASTER_W_BANK_IO_REG;
     addr_reset <<= DEPTH_B_M_W;
     addr_reset += IO_REG_W_RESET_PE;
-    mem[addr_reset] = 1;
-    mem[addr_reset] = 0;
+    mem[addr_reset] = reset_value;
     */
-    int addr_reset = LREG0;
+    int reset_value = LREG0;
+    int addr_reset = LREG1;
     label("f_reset_pe");
-    lib_wait_dep_pre();
     as_mvi(addr_reset, MASTER_W_BANK_IO_REG);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_sli(addr_reset, DEPTH_B_M_W);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
+    lib_nop(2);
+    as_mvsi(addr_reset, MVS_SL);
     as_addi(addr_reset, IO_REG_W_RESET_PE);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_sti(addr_reset, 1);
-    lib_wait_dep_post();
-    as_sti(addr_reset, 0);
+    as_st(addr_reset, reset_value);
     lib_return();
   }
 
@@ -222,26 +211,25 @@ public class MasterProgram extends AsmLib
     int addr_src = LREG1;
     int size = LREG2;
     int data = LREG3;
+    int compare = LREG4;
     label("f_get_u2m_data");
     as_mvi(size, 1);
-    lib_wait_dep_pre();
     as_mvi(addr_src, U2M_ADDR_H);
-    lib_wait_dep_post();
     as_sli(addr_src, U2M_ADDR_SHIFT);
     as_mvi(addr_dst, 0);
-    lib_wait_dep_pre();
     as_sli(size, DEPTH_M_D);
-    lib_wait_dep_post();
+    as_mvsi(addr_src, MVS_SL);
+    as_nop();
+    as_mvsi(size, MVS_SL);
     label("f_get_u2m_data_L_0");
     as_ld(data, addr_src);
     as_subi(size, 1);
-    lib_wait_dep_pre();
     as_addi(addr_src, 1);
-    lib_wait_dep_post();
+    as_ld(data, addr_src);
     as_st(addr_dst, data);
-    as_cnz(SP_REG_CP, size);
+    as_cnz(compare, size);
     as_addi(addr_dst, 1);
-    lib_bc("f_get_u2m_data_L_0");
+    lib_bc(compare, "f_get_u2m_data_L_0");
     lib_return();
   }
 
@@ -266,23 +254,19 @@ public class MasterProgram extends AsmLib
     int addr_sp_s = LREG3;
     int x = LREG5;
     label("f_reset_vga");
-    lib_wait_dep_pre();
     as_mvi(addr_ioreg, MASTER_W_BANK_IO_REG);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_sli(addr_ioreg, DEPTH_B_M_W);
-    lib_wait_dep_post();
+    lib_set_im(x, 64);
+    as_mvsi(addr_ioreg, MVS_SL);
     as_mv(addr_sp_x, addr_ioreg);
     as_mv(addr_sp_y, addr_ioreg);
-    lib_wait_dep_pre();
     as_mv(addr_sp_s, addr_ioreg);
-    lib_wait_dep_post();
     as_addi(addr_sp_x, IO_REG_W_SPRITE_X);
     as_addi(addr_sp_y, IO_REG_W_SPRITE_Y);
     as_addi(addr_sp_s, IO_REG_W_SPRITE_SCALE);
-    lib_set_im(x, 64);
     as_st(addr_sp_x, x);
     as_sti(addr_sp_y, 0);
+
     if (WIDTH_P_D == 32)
     {
       as_sti(addr_sp_s, 7);
@@ -305,6 +289,7 @@ public class MasterProgram extends AsmLib
     int cores = LREG3;
     int addr_cores = LREG4;
     int para = LREG5;
+    int compare = LREG6;
     /*
     R3 = cores - 1;
     lib_call("f_get_m2s_core_addr");
@@ -332,21 +317,18 @@ public class MasterProgram extends AsmLib
     as_mv(addr_core_id, R3);
     as_mv(addr_cores, R3);
     as_mvi(next_core_offset, 1);
-    lib_wait_dep_pre();
-    as_mv(i, cores);
-    lib_wait_dep_post();
     as_sli(next_core_offset, DEPTH_B_M_W);
+    as_mv(i, cores);
     as_addi(addr_cores, 1);
+    as_mvsi(next_core_offset, MVS_SL);
     label("f_init_core_id_L_0");
-    lib_wait_dep_pre();
     as_subi(i, 1);
-    lib_wait_dep_post();
     as_st(addr_core_id, i);
     as_st(addr_cores, para);
     as_sub(addr_core_id, next_core_offset);
     as_sub(addr_cores, next_core_offset);
-    as_cnz(SP_REG_CP, i);
-    lib_bc("f_init_core_id_L_0");
+    as_cnz(compare, i);
+    lib_bc(compare, "f_init_core_id_L_0");
     lib_pop(R3);
     lib_pop(SP_REG_LINK);
     lib_return();
@@ -365,33 +347,19 @@ public class MasterProgram extends AsmLib
     *addr_sp_y = page;
     */
 
-    lib_wait_dep_pre();
     as_mvi(addr_sp_y, MASTER_W_BANK_IO_REG);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_sli(addr_sp_y, DEPTH_B_M_W);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_addi(addr_sp_y, IO_REG_W_SPRITE_Y);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_mv(tmp0, task_id);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_andi(tmp0, 1);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
+    as_mvsi(addr_sp_y, MVS_SL);
     as_xori(tmp0, 1);
-    lib_wait_dep_post();
-    as_mvi(page, 0);
-    lib_wait_dep_pre();
     // vga_height = 1 << VGA_HEIGHT_BITS
     as_sli(tmp0, VGA_HEIGHT_BITS);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
+    as_mvi(page, 0);
+    as_addi(addr_sp_y, IO_REG_W_SPRITE_Y);
+    as_mvsi(tmp0, MVS_SL);
     // sp_y = 0(page0), -vga_height(page1)
     as_sub(page, tmp0);
-    lib_wait_dep_post();
     as_st(addr_sp_y, page);
   }
 
@@ -412,30 +380,23 @@ public class MasterProgram extends AsmLib
     int vsync = LREG1;
     int vsync_start = LREG2;
     int vsync_pre = LREG3;
-    lib_wait_dep_pre();
+    int compare = LREG4;
     as_mvi(addr_vsync, MASTER_R_BANK_IO_REG);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_sli(addr_vsync, DEPTH_B_M_R);
-    lib_wait_dep_post();
     as_mvi(vsync_pre, 0);
-    lib_wait_dep_pre();
+    as_nop();
+    as_mvsi(addr_vsync, MVS_SL);
     as_addi(addr_vsync, IO_REG_R_VGA_VSYNC);
-    lib_wait_dep_post();
-    label("m_wait_vsync_L_0");
-    lib_wait_dep_pre();
     as_ld(vsync, addr_vsync);
-    lib_wait_dep_post();
+    lib_nop(2);
+    label("m_wait_vsync_L_0");
+    as_ld(vsync, addr_vsync);
     as_cnz(vsync_start, vsync);
-    as_cnz(SP_REG_CP, vsync_pre);
-    lib_wait_dep_pre();
+    as_cnz(compare, vsync_pre);
     as_mv(vsync_pre, vsync);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_xori(SP_REG_CP, -1);
-    lib_wait_dep_post();
-    as_or(SP_REG_CP, vsync_start);
-    lib_bc("m_wait_vsync_L_0");
+    as_xori(compare, -1);
+    as_or(compare, vsync_start);
+    lib_bc(compare, "m_wait_vsync_L_0");
   }
 
   private void m_init_mandel_param()
@@ -463,9 +424,7 @@ public class MasterProgram extends AsmLib
     as_addi(addr_cy, 5);
     lib_ld(cx, "d_mandel_cx");
     lib_ld(cy, "d_mandel_cy");
-    lib_wait_dep_pre();
     as_st(addr_scale, scale);
-    lib_wait_dep_post();
     as_st(addr_cx, cx);
     as_st(addr_cy, cy);
   }
@@ -476,6 +435,7 @@ public class MasterProgram extends AsmLib
     int addr_scale = LREG0;
     int scale = LREG1;
     int scale_mask = LREG2;
+    int compare = LREG3;
 
     /*
     addr_scale = addr_m2s_root + 3;
@@ -490,22 +450,14 @@ public class MasterProgram extends AsmLib
 
     as_mv(addr_scale, addr_m2s_root);
     lib_ld(scale, "d_mandel_scale");
-    lib_wait_dep_pre();
     as_addi(addr_scale, 3);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_subi(scale, 1);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_cnz(SP_REG_CP, scale);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
+    as_cnz(compare, scale);
     as_mvil(256);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_xori(SP_REG_CP, -1);
-    lib_wait_dep_post();
-    as_mvc(scale, SP_REG_MVIL);
+    as_mv(SP_REG_MVC, scale);
+    as_xori(compare, -1);
+    as_mvc(SP_REG_MVIL, compare);
+    as_mv(scale, SP_REG_MVC);
     as_st(addr_scale, scale);
     lib_st("d_mandel_scale", scale);
   }
@@ -532,8 +484,10 @@ public class MasterProgram extends AsmLib
     int task_id = 7;
     int pe_ack = 8;
     int i = 9;
+    int compare = 10;
 
     /*
+    reset_pe(1);
     if (ENABLE_UART == 1)
     {
       lib_call("f_get_u2m_data");
@@ -546,7 +500,7 @@ public class MasterProgram extends AsmLib
     m_init_mandel_param();
     task_id = 0;
     mem[addr_task_id] = task_id;
-    reset_pe();
+    reset_pe(0);
     do
     {
       i = PARALLEL;
@@ -569,6 +523,8 @@ public class MasterProgram extends AsmLib
     */
     as_nop();
     lib_init_stack();
+    as_mvi(LREG0, 1);
+    lib_call("f_reset_pe");
 
     if (ENABLE_UART == 1)
     {
@@ -578,52 +534,40 @@ public class MasterProgram extends AsmLib
     lib_call("f_reset_vga");
     lib_call("f_init_core_id");
     lib_set_im(addr_m2s_root, M2S_BC_ADDR_H);
-    as_mvi(task_id, 0);
-    lib_wait_dep_pre();
     as_mvi(addr_s2m_root, MASTER_R_BANK_S2M);
-    lib_wait_dep_post();
     as_sli(addr_s2m_root, DEPTH_B_M_R);
-    lib_wait_dep_pre();
     as_sli(addr_m2s_root, M2S_BC_ADDR_SHIFT);
-    lib_wait_dep_post();
+    as_mvi(task_id, 0);
+    as_mvsi(addr_s2m_root, MVS_SL);
+    as_mvsi(addr_m2s_root, MVS_SL);
     m_init_mandel_param();
-    lib_wait_dep_pre();
     as_mv(addr_task_id, addr_m2s_root);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_addi(addr_task_id, 2);
-    lib_wait_dep_post();
     as_st(addr_task_id, task_id);
+    as_mvi(LREG0, 0);
     lib_call("f_reset_pe");
     label("master_thread_manager_L_0");
     lib_set_im(i, PARALLEL);
     as_addi(task_id, 1);
-    lib_wait_dep_pre();
     as_mv(addr_s2m, addr_s2m_root);
-    lib_wait_dep_post();
     label("master_thread_manager_L_1");
     as_subi(i, 1);
     label("master_thread_manager_L_2");
-    lib_wait_dep_pre();
     as_ld(pe_ack, addr_s2m);
-    lib_wait_dep_post();
-
-    lib_wait_dep_pre();
+    lib_nop(2);
+    as_ld(pe_ack, addr_s2m);
     as_sub(pe_ack, task_id);
-    lib_wait_dep_post();
 
     if (WIDTH_P_D < 32)
     {
-      lib_wait_dep_pre();
       as_andi(pe_ack, 1);
-      lib_wait_dep_post();
     }
 
-    as_cnz(SP_REG_CP, pe_ack);
-    lib_bc("master_thread_manager_L_2");
+    as_cnz(compare, pe_ack);
+    lib_bc(compare, "master_thread_manager_L_2");
     as_addi(addr_s2m, 1);
-    as_cnz(SP_REG_CP, i);
-    lib_bc("master_thread_manager_L_1");
+    as_cnz(compare, i);
+    lib_bc(compare, "master_thread_manager_L_1");
 
     m_update_mandel_param();
 
@@ -632,13 +576,11 @@ public class MasterProgram extends AsmLib
       lib_push(R3);
       as_mv(R3, task_id);
       lib_call("f_uart_hex_word_ln");
-      lib_wait_dep_pre();
       as_mvi(R3, 1);
-      lib_wait_dep_post();
-      lib_wait_dep_pre();
-      as_sli(R3, 15);
-      lib_wait_dep_post();
-      as_sli(R3, 6);
+      as_mvil(21);
+      as_sl(R3, SP_REG_MVIL);
+      lib_nop(2);
+      as_mvsi(R3, MVS_SL);
       lib_call("f_wait");
       lib_pop(R3);
     }
@@ -709,8 +651,6 @@ public class MasterProgram extends AsmLib
     set_filename("default_master_data");
     set_rom_width(WIDTH_M_D);
     set_rom_depth(DEPTH_M_D);
-    label("d_rand");
-    dat(0xfc720c27);
     label("d_mandel_scale");
     dat(256);
     label("d_mandel_cx");

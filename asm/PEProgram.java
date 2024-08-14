@@ -1,17 +1,5 @@
-/*
-  Copyright (c) 2019, miya
-  All rights reserved.
-
-  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// SPDX-License-Identifier: BSD-2-Clause
+// Copyright (c) 2019 miya All rights reserved.
 
 import java.lang.Math;
 
@@ -56,6 +44,7 @@ public class PEProgram extends AsmLib
     int tmp1 = 27;
     int tmp2 = 28;
     int tmp3 = 29;
+    int compare = 30;
 
     // const
     int FIXED_BITS = 13;
@@ -97,7 +86,7 @@ public class PEProgram extends AsmLib
     lib_set_im(count, 100);
     lib_set_im(tmp1, IMAGE_WIDTH_HALF);
     lib_set_im(tmp2, IMAGE_HEIGHT_HALF);
-    as_mvi(max_c, 4);
+    as_mvi(max_c, MAX_C);
     as_sli(max_c, FIXED_BITS);
     as_sub(x1, tmp1);
     as_sub(y1, tmp2);
@@ -127,93 +116,71 @@ public class PEProgram extends AsmLib
     as_sub(pc, c);
     as_sub(tmp1, c);
     as_sri(pc, 5);
-    as_cnm(SP_REG_CP, tmp1);
+    as_cnm(compare, tmp1);
     as_cnm(tmp2, count);
     as_cnz(tmp3, pc);
-    as_and(SP_REG_CP, tmp2);
-    as_and(SP_REG_CP, tmp3);
-    lib_bc("m_mandel_L_0");
+    as_and(compare, tmp2);
+    as_and(compare, tmp3);
+    lib_bc(compare, "m_mandel_L_0");
     */
 
+    as_mv(x1, x);
+    as_mv(y1, y);
+    lib_set_im(tmp1, IMAGE_WIDTH_HALF);
+    lib_set_im(tmp2, IMAGE_HEIGHT_HALF);
+    as_mvi(max_c, MAX_C);
+    as_sli(max_c, FIXED_BITS);
+    as_sub(x1, tmp1);
+    as_sub(y1, tmp2);
+    as_mvsi(max_c, MVS_SL);
+    as_mul(x1, scale);
+    as_mul(y1, scale);
     as_mvi(a, 0);
     as_mvi(b, 0);
     as_mvi(aa, 0);
     as_mvi(bb, 0);
-    as_mv(x1, x);
-    as_mv(y1, y);
-    lib_set_im(count, 100);
-    lib_set_im(tmp1, IMAGE_WIDTH_HALF);
-    lib_set_im(tmp2, IMAGE_HEIGHT_HALF);
-    lib_wait_dep_pre();
-    as_mvi(max_c, 4);
-    lib_wait_dep_post();
-    as_sli(max_c, FIXED_BITS);
-    as_sub(x1, tmp1);
-    lib_wait_dep_pre();
-    as_sub(y1, tmp2);
-    lib_wait_dep_post();
-    as_mul(x1, scale);
-    lib_wait_dep_pre();
-    as_mul(y1, scale);
-    lib_wait_dep_post();
+    as_mvsi(x1, MVS_MUL);
+    as_mvsi(y1, MVS_MUL);
     as_add(x1, cx);
     as_add(y1, cy);
+    lib_set_im(count, 100);
     label("m_mandel_core_L_0");
-    as_mv(pc, c);
-    lib_wait_dep_pre();
     as_mul(b, a);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_srai(b, FIXED_BITS_M1);
-    lib_wait_dep_post();
-    as_sub(b, y1);
-    lib_wait_dep_pre();
-    as_mv(a, aa);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_sub(a, bb);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_sub(a, x1);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_mv(aa, a);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_mul(aa, a);
-    lib_wait_dep_post();
-    as_sri(aa, FIXED_BITS);
-    lib_wait_dep_pre();
-    as_mv(bb, b);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_mul(bb, b);
-    lib_wait_dep_post();
-    as_sri(bb, FIXED_BITS);
-    lib_wait_dep_pre();
-    as_mv(c, aa);
-    lib_wait_dep_post();
-    as_add(c, bb);
     as_subi(count, 1);
+    as_mv(pc, c);
+    as_mv(a, aa);
+    as_sub(a, bb);
+    as_sub(a, x1);
+    as_mvsi(b, MVS_MUL);
+    as_srai(b, FIXED_BITS_M1);
     as_add(x1, scale);
-    lib_wait_dep_pre();
+    as_mv(aa, a);
+    as_mvsi(b, MVS_SRA);
+    as_sub(b, y1);
+    as_mv(bb, b);
+    as_mul(bb, b);
+    as_mul(aa, a);
     as_mv(tmp1, max_c);
-    lib_wait_dep_post();
+    lib_nop(3);
+    as_mvsi(bb, MVS_MUL);
+    as_sri(bb, FIXED_BITS);
+    as_mvsi(aa, MVS_MUL);
+    as_sri(aa, FIXED_BITS);
+    as_mvsi(bb, MVS_SR);
+    as_nop();
+    as_mvsi(aa, MVS_SR);
+    as_mv(c, aa);
+    as_add(c, bb);
     as_sub(pc, c);
-    lib_wait_dep_pre();
-    as_sub(tmp1, c);
-    lib_wait_dep_post();
     as_sri(pc, 5);
-    as_cnm(SP_REG_CP, tmp1);
-    lib_wait_dep_pre();
+    as_sub(tmp1, c);
+    as_cnm(compare, tmp1);
+    as_mvsi(pc, MVS_SR);
     as_cnm(tmp2, count);
-    lib_wait_dep_post();
     as_cnz(tmp3, pc);
-    lib_wait_dep_pre();
-    as_and(SP_REG_CP, tmp2);
-    lib_wait_dep_post();
-    as_and(SP_REG_CP, tmp3);
-    lib_bc("m_mandel_core_L_0");
+    as_and(compare, tmp2);
+    as_and(compare, tmp3);
+    lib_bc(compare, "m_mandel_core_L_0");
   }
 
   private void m_fill_vram()
@@ -228,6 +195,7 @@ public class PEProgram extends AsmLib
     int page = 11;
     int item_count = 11;
     int tmp0 = 12;
+    int compare = 13;
     /*
     lib_push(vram_addr);
     
@@ -254,48 +222,37 @@ public class PEProgram extends AsmLib
     lib_push(vram_addr);
 
     as_mvi(i, 1);
-    as_mv(page, task_id);
     lib_set_im(tmp0, IMAGE_WIDTH_BITS + IMAGE_HEIGHT_BITS);
-    lib_sl(i, tmp0);
-    lib_wait_dep_pre();
+    as_sl(i, tmp0);
+    as_mv(page, task_id);
     as_andi(page, 1);
-    lib_wait_dep_post();
+    as_mvsi(i, MVS_SL);
+    as_sl(page, tmp0);
     as_subi(i, 1);
-    lib_wait_dep_pre();
-    lib_sl(page, tmp0);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_sub(i, my_core_id);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
+    as_mvsi(page, MVS_SL);
     as_add(page, i);
-    lib_wait_dep_post();
     as_add(vram_addr, page);
 
-    lib_wait_dep_pre();
     as_mvi(item_count_addr, ITEM_COUNT_ADDR_H);
-    lib_wait_dep_post();
-    lib_sli(item_count_addr, ITEM_COUNT_ADDR_SHIFT);
-    lib_wait_dependency();
+    as_sli(item_count_addr, ITEM_COUNT_ADDR_SHIFT);
+    lib_nop(2);
+    as_mvsi(item_count_addr, MVS_SL);
 
     label("m_fill_vram_L_0");
 
-    lib_wait_dep_pre();
     as_ld(item_count, item_count_addr);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
+    lib_nop(2);
+    as_ld(item_count, item_count_addr);
     as_subi(item_count, MAX_ITEM);
-    lib_wait_dep_post();
-    as_cnm(SP_REG_CP, item_count);
-    lib_bc("m_fill_vram_L_0");
+    as_cnm(compare, item_count);
+    lib_bc(compare, "m_fill_vram_L_0");
 
     as_st(vram_addr, task_id);
     as_sub(vram_addr, parallel);
-    lib_wait_dep_pre();
     as_sub(i, parallel);
-    lib_wait_dep_post();
-    as_cnm(SP_REG_CP, i);
-    lib_bc("m_fill_vram_L_0");
+    as_cnm(compare, i);
+    lib_bc(compare, "m_fill_vram_L_0");
     lib_pop(vram_addr);
   }
 
@@ -317,6 +274,10 @@ public class PEProgram extends AsmLib
     // temp
     int tmp0 = 17;
     int param_addr = 17;
+    int compare = 17;
+    int wait_counter = 18;
+    // const
+    int WAIT = 8;
     /*
     lib_push_regs(4, 6); // push R4-R9
     // get param
@@ -342,66 +303,59 @@ public class PEProgram extends AsmLib
     lib_push_regs(4, 6);
 
     // get param
-    lib_wait_dep_pre();
     as_mv(param_addr, m2s_addr);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_addi(param_addr, 1);
-    lib_wait_dep_post();
-    as_ld(scale, param_addr);
-    lib_wait_dep_pre();
+    as_ld(scale, param_addr); // ld param_addr
     as_addi(param_addr, 1);
-    lib_wait_dep_post();
-    as_ld(cx, param_addr);
-    lib_wait_dep_pre();
+    as_ld(scale, param_addr); // ld param_addr+1
     as_addi(param_addr, 1);
-    lib_wait_dep_post();
-    as_ld(cy, param_addr);
+    as_ld(scale, param_addr); // write scale, ld param_addr+2
+    as_ld(cx, param_addr); // write cx, ld param_addr+2
+    as_nop();
+    as_ld(cy, param_addr); // write cy
 
     as_mvi(i, 1);
     as_mv(page, task_id);
     as_mvi(tmp0, 1);
-    lib_mvil(IMAGE_WIDTH_BITS + IMAGE_HEIGHT_BITS);
+    as_mvil(IMAGE_WIDTH_BITS + IMAGE_HEIGHT_BITS);
     as_sl(i, SP_REG_MVIL);
     as_sl(tmp0, SP_REG_MVIL);
-    lib_wait_dep_pre();
     as_andi(page, 1);
-    lib_wait_dep_post();
+    as_mvsi(i, MVS_SL);
+    as_mvsi(tmp0, MVS_SL);
     as_subi(i, 1);
-    lib_wait_dep_pre();
     as_sl(page, SP_REG_MVIL);
-    lib_wait_dep_post();
     as_sub(i, my_core_id);
-    lib_wait_dep_pre();
+    as_nop();
+    as_mvsi(page, MVS_SL);
     as_add(page, tmp0);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_subi(page, 1);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_sub(page, my_core_id);
-    lib_wait_dep_post();
     as_add(vram_addr, page);
     label("m_mandel_L_0");
+
+    // It has become too fast for the Harvester...
+    lib_set_im(wait_counter, WAIT);
+    label("m_mandel_L_1");
+    as_subi(wait_counter, 1);
+    as_cnm(compare, wait_counter);
+    lib_bc(compare, "m_mandel_L_1");
+
     as_mv(x, i);
     as_mv(y, i);
     lib_set_im(tmp0, (1 << IMAGE_WIDTH_BITS) - 1);
-    lib_wait_dep_pre();
     as_sri(y, IMAGE_WIDTH_BITS);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_and(x, tmp0);
-    lib_wait_dep_post();
+    as_nop();
+    as_mvsi(y, MVS_SR);
 
     m_mandel_core();
 
     as_st(vram_addr, count);
     as_sub(vram_addr, parallel);
-    lib_wait_dep_pre();
     as_sub(i, parallel);
-    lib_wait_dep_post();
-    as_cnm(SP_REG_CP, i);
-    lib_bc("m_mandel_L_0");
+    as_cnm(compare, i);
+    lib_bc(compare, "m_mandel_L_0");
     lib_pop_regs(4, 6);
   }
 
@@ -416,6 +370,7 @@ public class PEProgram extends AsmLib
     // temp
     int master_task_id = 10;
     int diff = 11;
+    int compare = 12;
     /*
     as_nop();
     lib_init_stack();
@@ -445,48 +400,37 @@ public class PEProgram extends AsmLib
     lib_init_stack();
     // get m2s,vram,s2m addr
     as_mvi(m2s_addr, M2S_ADDR_H);
+    as_sli(m2s_addr, M2S_ADDR_SHIFT);
     as_mvi(s2m_addr, S2M_ADDR_H);
-    lib_wait_dep_pre();
+    as_sli(s2m_addr, S2M_ADDR_SHIFT);
+    as_mvsi(m2s_addr, MVS_SL);
+    as_ld(my_core_id, m2s_addr); // 1st
+    as_mvsi(s2m_addr, MVS_SL);
     as_mvi(vram_addr, VRAM_ADDR_H);
-    lib_wait_dep_post();
-    lib_sli(m2s_addr, M2S_ADDR_SHIFT);
-    lib_sli(s2m_addr, S2M_ADDR_SHIFT);
-    lib_sli(vram_addr, VRAM_ADDR_SHIFT);
-    lib_wait_dependency();
+    as_sli(vram_addr, VRAM_ADDR_SHIFT);
 
-    as_ld(my_core_id, m2s_addr);
-    lib_wait_dep_pre();
+    as_ld(my_core_id, m2s_addr); // 2nd
     as_addi(m2s_addr, 1);
-    lib_wait_dep_post();
+    as_ld(parallel, m2s_addr); // 1st
+    as_mvsi(vram_addr, MVS_SL);
     as_mv(diff, my_core_id);
     as_add(s2m_addr, my_core_id);
-    as_ld(parallel, m2s_addr);
-    lib_wait_dep_pre();
+    as_ld(parallel, m2s_addr); // 2nd
     as_addi(m2s_addr, 1);
-    lib_wait_dep_post();
-    as_ld(task_id, m2s_addr);
-    lib_wait_dep_pre();
+    as_ld(task_id, m2s_addr); // 1st
     as_sub(diff, parallel);
-    lib_wait_dep_post();
-    as_cnm(SP_REG_CP, diff);
-    lib_bc("pe_thread_manager_L_end");
+    as_cnm(compare, diff);
+    as_ld(task_id, m2s_addr); // 2nd
+    lib_bc(compare, "pe_thread_manager_L_end");
     label("pe_thread_manager_L_0");
-    lib_wait_dep_pre();
     as_addi(task_id, 1);
-    lib_wait_dep_post();
     as_st(s2m_addr, task_id);
     label("pe_thread_manager_L_1");
-    lib_wait_dep_pre();
-    as_ld(master_task_id, m2s_addr);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
+    as_ld(master_task_id, m2s_addr); // 3rd
     as_mv(diff, master_task_id);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_sub(diff, task_id);
-    lib_wait_dep_post();
-    as_cnz(SP_REG_CP, diff);
-    lib_bc("pe_thread_manager_L_1");
+    as_cnz(compare, diff);
+    lib_bc(compare, "pe_thread_manager_L_1");
 
     if (WIDTH_P_D == 32)
     {
@@ -512,11 +456,6 @@ public class PEProgram extends AsmLib
     REGS = (1 << DEPTH_REG);
     SP_REG_STACK_POINTER = (REGS - 1);
     STACK_ADDRESS = ((1 << DEPTH_P_D) - 1);
-    ENABLE_MVIL = opts.getIntValue("pe_enable_mvil");
-    ENABLE_MUL = opts.getIntValue("pe_enable_mul");
-    ENABLE_MVC = opts.getIntValue("pe_enable_mvc");
-    ENABLE_WA = opts.getIntValue("pe_enable_wa");
-    ENABLE_MULTI_BIT_SHIFT = opts.getIntValue("pe_enable_multi_bit_shift");
     LREG0 = opts.getIntValue("lreg_start") + 0;
     LREG1 = opts.getIntValue("lreg_start") + 1;
     LREG2 = opts.getIntValue("lreg_start") + 2;
@@ -551,12 +490,6 @@ public class PEProgram extends AsmLib
     set_rom_width(WIDTH_I);
     set_rom_depth(DEPTH_P_I);
     pe_thread_manager();
-
-    // link
-    if (ENABLE_MULTI_BIT_SHIFT != 1)
-    {
-      f_lib_sl();
-    }
   }
 
   @Override
@@ -565,7 +498,5 @@ public class PEProgram extends AsmLib
     set_filename("default_pe_data");
     set_rom_width(WIDTH_P_D);
     set_rom_depth(DEPTH_P_D);
-    label("d_rand");
-    dat(0xfc720c27);
   }
 }

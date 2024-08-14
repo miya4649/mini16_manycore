@@ -1,17 +1,5 @@
-/*
-  Copyright (c) 2019, miya
-  All rights reserved.
-
-  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// SPDX-License-Identifier: BSD-2-Clause
+// Copyright (c) 2019 miya All rights reserved.
 
 public class AsmLib extends Asm
 {
@@ -19,12 +7,8 @@ public class AsmLib extends Asm
 
   public int CORES;
   public int PARALLEL;
-  public int ENABLE_MVIL;
-  public int ENABLE_MUL;
-  public int ENABLE_MVC;
-  public int ENABLE_WA;
   public int ENABLE_UART;
-  public int ENABLE_MULTI_BIT_SHIFT;
+  public int ENABLE_SINGLE_CYCLE;
 
   public int WIDTH_I;
   public int DEPTH_IO_REG;
@@ -100,7 +84,7 @@ public class AsmLib extends Asm
 
   public int STACK_ADDRESS;
 
-  public static final int SP_REG_CP = 0;
+  public static final int SP_REG_MVC = 0;
   public static final int SP_REG_MVIL = 1;
   public static final int SP_REG_LINK = 2;
 
@@ -109,11 +93,16 @@ public class AsmLib extends Asm
   public static final int R5 = 5;
   public static final int R6 = 6;
   public static final int R7 = 7;
+  public static final int R8 = 8;
 
-  public static final int WAIT_DELAYSLOT = 5;
-  public static final int WAIT_DEPENDENCY = 5;
+  public static final int WAIT_DELAYSLOT = 2;
 
   public static final int MVIL_ADDR_LIMIT = 0x800;
+
+  public static final int MVS_SL = 0;
+  public static final int MVS_SR = 1;
+  public static final int MVS_SRA = 2;
+  public static final int MVS_MUL = 3;
 
   public GetOpt opts;
 
@@ -123,6 +112,10 @@ public class AsmLib extends Asm
     opts = new GetOpt();
     opts.setArgs(args);
     opts.setDefault("cores", 32);
+    opts.setDefault("width_m_d", 32);
+    opts.setDefault("depth_m_i", 11);
+    opts.setDefault("depth_m_d", 11);
+    opts.setDefault("depth_u2m", 11);
     opts.setDefault("width_p_d", 32);
     opts.setDefault("depth_p_i", 10);
     opts.setDefault("depth_p_d", 8);
@@ -132,37 +125,26 @@ public class AsmLib extends Asm
     opts.setDefault("vram_width_bits", 8);
     opts.setDefault("vram_height_bits", 9);
     opts.setDefault("pe_depth_reg", 5);
-    opts.setDefault("pe_enable_mvil", 1);
-    opts.setDefault("pe_enable_mul", 1);
-    opts.setDefault("pe_enable_mvc", 1);
-    opts.setDefault("pe_enable_wa", 1);
     opts.setDefault("lreg_start", 24);
     opts.setDefault("enable_uart", 1);
-    opts.setDefault("pe_enable_multi_bit_shift", 1);
 
     DEPTH_REG = 5;
 
     CORES = opts.getIntValue("cores");
     PARALLEL = CORES;
-    // always 1 on the master core
-    ENABLE_MVIL = 1;
-    ENABLE_MUL = 1;
-    ENABLE_MVC = 1;
-    ENABLE_WA = 1;
-    ENABLE_MULTI_BIT_SHIFT = 1;
     ENABLE_UART = opts.getIntValue("enable_uart");
 
     WIDTH_I = 16;
     DEPTH_IO_REG = 5;
-    WIDTH_M_D = 32;
+    WIDTH_M_D = opts.getIntValue("width_m_d");
+    DEPTH_M_I = opts.getIntValue("depth_m_i");
+    DEPTH_M_D = opts.getIntValue("depth_m_d");
     WIDTH_P_D = opts.getIntValue("width_p_d");
-    DEPTH_M_I = 11;
-    DEPTH_M_D = 11;
     DEPTH_P_I = opts.getIntValue("depth_p_i");
     DEPTH_P_D = opts.getIntValue("depth_p_d");
     DEPTH_M2S = opts.getIntValue("depth_m2s");
     DEPTH_S2M = 9;
-    DEPTH_U2M = 11;
+    DEPTH_U2M = opts.getIntValue("depth_u2m");
     IMAGE_WIDTH_BITS = opts.getIntValue("image_width_bits");
     IMAGE_HEIGHT_BITS = opts.getIntValue("image_height_bits");
     DEPTH_VRAM = opts.getIntValue("vram_width_bits") + opts.getIntValue("vram_height_bits");
@@ -237,14 +219,13 @@ public class AsmLib extends Asm
     {
       print_error("lib_ba: exceeds address limit");
     }
-    lib_mvil(addr);
-    lib_wait_ds_pre();
+    as_mvil(addr);
     as_ba(SP_REG_MVIL);
-    lib_wait_ds_post();
+    lib_wait_delay_slot();
   }
 
   // branch to label
-  public void lib_bc(String name)
+  public void lib_bc(int reg, String name)
   {
     // modify: SP_REG_MVIL
     int addr = addr_abs(name);
@@ -252,10 +233,9 @@ public class AsmLib extends Asm
     {
       print_error("lib_bc: exceeds address limit");
     }
-    lib_mvil(addr);
-    lib_wait_ds_pre();
-    as_bc(SP_REG_CP, SP_REG_MVIL);
-    lib_wait_ds_post();
+    as_mvil(addr);
+    as_bc(reg, SP_REG_MVIL);
+    lib_wait_delay_slot();
   }
 
   // call function
@@ -267,23 +247,34 @@ public class AsmLib extends Asm
     {
       print_error("lib_call: exceeds address limit");
     }
-    lib_mvil(addr);
-    lib_wait_ds_pre();
+    as_mvil(addr);
     as_bl(SP_REG_LINK, SP_REG_MVIL);
-    lib_wait_ds_post();
+    lib_wait_delay_slot();
   }
 
   // initialize stack
   public void lib_init_stack()
   {
     /* prerequisite: mem_d depth <= 11 */
-    lib_mvil(STACK_ADDRESS);
-    lib_wait_dep_pre();
+    as_mvil(STACK_ADDRESS);
     as_mv(SP_REG_STACK_POINTER, SP_REG_MVIL);
-    lib_wait_dep_post();
   }
 
-  // load with label
+  // load with label (no wait)
+  // reg: destination register (previously loaded data)
+  // name: data address label (load reservation, latency:3)
+  public void lib_ld_nw(int reg, String name)
+  {
+    int addr = addr_abs(name);
+    if (addr > MVIL_ADDR_LIMIT)
+    {
+      print_error("lib_ld: exceeds address limit");
+    }
+    as_mvil(addr);
+    as_ld(reg, SP_REG_MVIL);
+  }
+
+  // load with label (with wait)
   public void lib_ld(int reg, String name)
   {
     int addr = addr_abs(name);
@@ -291,16 +282,10 @@ public class AsmLib extends Asm
     {
       print_error("lib_ld: exceeds address limit");
     }
-    lib_mvil(addr);
+    as_mvil(addr);
     as_ld(reg, SP_REG_MVIL);
-  }
-
-  // MVIL wrapper
-  public void lib_mvil(int value)
-  {
-    lib_wait_dep_pre();
-    as_mvil(value);
-    lib_wait_dep_post();
+    lib_nop(2);
+    as_ld(reg, SP_REG_MVIL);
   }
 
   // store with label
@@ -311,7 +296,7 @@ public class AsmLib extends Asm
     {
       print_error("lib_st: exceeds address limit");
     }
-    lib_mvil(addr);
+    as_mvil(addr);
     as_st(SP_REG_MVIL, reg);
   }
 
@@ -327,9 +312,6 @@ public class AsmLib extends Asm
   // stack: push r[reg]
   public void lib_push(int reg)
   {
-    lib_wait_dep_pre();
-    as_nop();
-    lib_wait_dep_post();
     as_st(SP_REG_STACK_POINTER, reg);
     as_subi(SP_REG_STACK_POINTER, 1);
   }
@@ -337,21 +319,15 @@ public class AsmLib extends Asm
   // stack: pop to r[reg]
   public void lib_pop(int reg)
   {
-    lib_wait_dep_pre();
-    as_nop();
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
     as_addi(SP_REG_STACK_POINTER, 1);
-    lib_wait_dep_post();
+    as_ld(reg, SP_REG_STACK_POINTER);
+    lib_nop(2);
     as_ld(reg, SP_REG_STACK_POINTER);
   }
 
   // stack: push r[reg_s] ~ r[reg_s + num - 1]
   public void lib_push_regs(int reg_s, int num)
   {
-    lib_wait_dep_pre();
-    as_nop();
-    lib_wait_dep_post();
     if ((reg_s < 0) || (reg_s >= LREG0))
     {
       print_error("lib_push_regs: invalid register number");
@@ -360,37 +336,17 @@ public class AsmLib extends Asm
     {
       print_error("lib_push_regs: 1 <= num <= 7");
     }
-    for (int i = 1; i < num; i++)
-    {
-      as_mv(LREG0 + i, SP_REG_STACK_POINTER);
-    }
     as_mv(LREG0, SP_REG_STACK_POINTER);
-    as_subi(SP_REG_STACK_POINTER, num);
-    if (num < 5)
+    for (int i = 0; i < num; i++)
     {
-      lib_nop(5 - num);
-    }
-    for (int i = 1; i < num; i++)
-    {
-      as_subi(LREG0 + i, i);
-    }
-    as_st(LREG0, reg_s);
-    if (num < 6)
-    {
-      lib_nop(6 - num);
-    }
-    for (int i = 1; i < num; i++)
-    {
-      as_st(LREG0 + i, reg_s + i);
+      as_st(SP_REG_STACK_POINTER, reg_s + i);
+      as_subi(SP_REG_STACK_POINTER, 1);
     }
   }
 
   // stack: pop to r[reg_s + num - 1] ~ r[reg_s]
   public void lib_pop_regs(int reg_s, int num)
   {
-    lib_wait_dep_pre();
-    as_nop();
-    lib_wait_dep_post();
     if ((reg_s < 0) || (reg_s >= LREG0))
     {
       print_error("lib_pop_regs: invalid register number");
@@ -399,113 +355,37 @@ public class AsmLib extends Asm
     {
       print_error("lib_pop_regs: 1 <= num <= 7");
     }
-    for (int i = 0; i < num; i++)
+    as_addi(SP_REG_STACK_POINTER, 1);
+    as_ld(reg_s + num - 1, SP_REG_STACK_POINTER);
+    for (int i = 0; i < num - 1; i++)
     {
-      as_mv(LREG0 + i, SP_REG_STACK_POINTER);
+      as_nop();
+      as_addi(SP_REG_STACK_POINTER, 1);
+      as_ld(reg_s + num - 1 - i, SP_REG_STACK_POINTER);
     }
-    as_addi(SP_REG_STACK_POINTER, num);
-    if (num < 5)
-    {
-      lib_nop(5 - num);
-    }
-    for (int i = 0; i < num; i++)
-    {
-      as_addi(LREG0 + i, i + 1);
-    }
-    if (num < 6)
-    {
-      lib_nop(6 - num);
-    }
-    for (int i = 0; i < num; i++)
-    {
-      as_ld(num - 1 - i + reg_s, LREG0 + i);
-    }
+    lib_nop(2);
+    as_ld(reg_s, SP_REG_STACK_POINTER);
   }
 
   // return
   public void lib_return()
   {
-    lib_wait_dep_pre();
-    as_nop();
-    lib_wait_dep_post();
-    lib_wait_ds_pre();
     as_ba(SP_REG_LINK);
-    lib_wait_ds_post();
+    lib_wait_delay_slot();
   }
 
   // Reg[reg] = value (11bit)
   public void lib_set_im(int reg, int value)
   {
-    lib_mvil(value);
-    lib_wait_dep_pre();
+    as_mvil(value);
     as_mv(reg, SP_REG_MVIL);
-    lib_wait_dep_post();
-  }
-
-  // wait: delay_slot
-  public void lib_wait_ds_pre()
-  {
-    if (ENABLE_WA == 1)
-    {
-      as_wa(WAIT_DELAYSLOT);
-    }
-  }
-
-  // wait: delay_slot
-  public void lib_wait_ds_post()
-  {
-    if (ENABLE_WA != 1)
-    {
-      lib_nop(WAIT_DELAYSLOT);
-    }
-  }
-
-  // wait: dependency
-  public void lib_wait_dep_pre()
-  {
-    if (ENABLE_WA == 1)
-    {
-      as_wa(WAIT_DEPENDENCY);
-    }
-  }
-
-  // wait: dependency
-  public void lib_wait_dep_post()
-  {
-    if (ENABLE_WA != 1)
-    {
-      lib_nop(WAIT_DEPENDENCY);
-    }
   }
 
   // wait: delay_slot
   public void lib_wait_delay_slot()
   {
-    if (ENABLE_WA == 1)
-    {
-      as_wa(WAIT_DELAYSLOT - 1);
-      as_nop();
-    }
-    else
-    {
-      lib_nop(WAIT_DELAYSLOT);
-    }
+    lib_nop(WAIT_DELAYSLOT);
   }
-
-  // wait: dependency
-  public void lib_wait_dependency()
-  {
-    if (ENABLE_WA == 1)
-    {
-      as_wa(WAIT_DEPENDENCY - 1);
-      as_nop();
-    }
-    else
-    {
-      lib_nop(WAIT_DEPENDENCY);
-    }
-  }
-
 
   // functions ---------------------------------------------
 
@@ -516,6 +396,7 @@ public class AsmLib extends Asm
     // output: none
     label("f_halt");
     lib_ba("f_halt");
+    lib_wait_delay_slot();
   }
 
   public void f_memcpy()
@@ -537,327 +418,29 @@ public class AsmLib extends Asm
     int size = R5;
     int data = LREG0;
     label("f_memcpy");
-    label("f_memcpy_L_0");
     as_ld(data, addr_src);
-    as_subi(size, 1);
+    as_nop();
+    label("f_memcpy_L_0");
     as_addi(addr_src, 1);
-    lib_nop(3);
+    as_ld(data, addr_src);
     as_st(addr_dst, data);
-    as_cnz(SP_REG_CP, size);
     as_addi(addr_dst, 1);
-    lib_bc("f_memcpy_L_0");
+    as_subi(size, 1);
+    as_cnz(LREG1, size);
+    lib_bc(LREG1, "f_memcpy_L_0");
     lib_return();
   }
 
-  // return random value r3
-  public void f_rand()
+  public void f_wait()
   {
-    // input: none
-    // output: r3:random
-    label("f_rand");
-    m_f_rand();
+    // simple wait ()
+    // input: r3:count
+    // modify: r3
+    label("f_wait");
+    as_subi(R3, 1);
+    as_cnz(LREG0, R3);
+    lib_bc(LREG0, "f_wait");
     lib_return();
-  }
-
-  // return random value (0 ~ (N - 1))
-  public void f_nrand()
-  {
-    // input: r3:max number N (16bit)
-    // output: r3:random (0 ~ (N - 1))
-    /*
-    rmax = R3;
-    rand = f_rand();
-    rand &= 0xffff;
-    rand *= rmax;
-    rand >>= 16;
-    */
-    int rmax = LREG3;
-    int constff = LREG4;
-    int const16 = LREG5;
-    label("f_nrand");
-    lib_push(SP_REG_LINK);
-    as_mv(rmax, R3);
-    lib_call("f_rand");
-    lib_wait_dep_pre();
-    as_mvi(const16, 8);
-    lib_wait_dep_post();
-    as_addi(const16, 8);
-    lib_wait_dep_pre();
-    as_mvi(constff, -1);
-    lib_wait_dep_post();
-    lib_sr(constff, const16);
-    lib_wait_dependency();
-    lib_wait_dep_pre();
-    as_and(R3, constff);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_mul(R3, rmax);
-    lib_wait_dep_post();
-    lib_sr(R3, const16);
-    lib_pop(SP_REG_LINK);
-    lib_return();
-  }
-
-  public void f_rand_init()
-  {
-    // input: R3:random seed
-    label("f_rand_init");
-    int Raddr = LREG0;
-    int Rseed1 = LREG1;
-    int Rseed2 = LREG2;
-    int Rseed3 = LREG3;
-    lib_set_im(Raddr, addr_abs("d_rand"));
-    lib_set_im(Rseed1, 0x7b4);
-    lib_set_im(Rseed2, 0x4ae);
-    lib_set_im(Rseed3, 0x3b1);
-    lib_sli(Rseed1, 11);
-    lib_wait_dependency();
-    lib_sli(Rseed2, 11);
-    lib_wait_dependency();
-    lib_sli(Rseed1, 10);
-    lib_wait_dep_pre();
-    as_or(Rseed2, Rseed3);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_or(Rseed1, Rseed2);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_add(Rseed1, R3);
-    lib_wait_dep_post();
-    as_st(Raddr, Rseed1);
-    lib_return();
-  }
-
-  // macro of f_rand
-  public void m_f_rand()
-  {
-    /*
-    seed_addr = addr_abs("d_rand");
-    const17 = 17;
-    rand0 = mem[seed_addr];
-    rand1 = mem[seed_addr];
-    rand1 <<= 13;
-    rand0 ^= rand1;
-    rand1 = rand0;
-    rand1 >>= const17;
-    rand0 ^= rand1;
-    rand1 = rand0;
-    rand1 <<= 5;
-    rand0 ^= rand1;
-    mem[seed_addr] = rand0;
-    */
-    int rand0 = R3;
-    int rand1 = LREG0;
-    int const17 = LREG1;
-    int seed_addr = LREG2;
-    lib_set_im(seed_addr, addr_abs("d_rand"));
-    lib_set_im(const17, 17);
-    as_ld(rand0, seed_addr);
-    lib_wait_dep_pre();
-    as_ld(rand1, seed_addr);
-    lib_wait_dep_post();
-    lib_sli(rand1, 13);
-    lib_wait_dependency();
-    lib_wait_dep_pre();
-    as_xor(rand0, rand1);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_mv(rand1, rand0);
-    lib_wait_dep_post();
-    lib_sri(rand1, const17);
-    lib_wait_dependency();
-    lib_wait_dep_pre();
-    as_xor(rand0, rand1);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_mv(rand1, rand0);
-    lib_wait_dep_post();
-    lib_sli(rand1, 5);
-    lib_wait_dependency();
-    lib_wait_dep_pre();
-    as_xor(rand0, rand1);
-    lib_wait_dep_post();
-    as_st(seed_addr, rand0);
-  }
-
-  public void lib_sl(int reg_d, int reg_a)
-  {
-    if (ENABLE_MULTI_BIT_SHIFT == 1)
-    {
-      as_sl(reg_d, reg_a);
-    }
-    else
-    {
-      as_mv(LREG5, reg_d);
-      as_mv(LREG6, reg_a);
-      lib_call("f_lib_sl");
-      as_mv(reg_d, LREG5);
-    }
-  }
-
-  public void lib_sli(int reg_d, int shift_width)
-  {
-    if ((shift_width < 0) || (shift_width > 15))
-    {
-      print_error("lib_sli: shift_width exceeds limit 0 to 15");
-    }
-    if (ENABLE_MULTI_BIT_SHIFT == 1)
-    {
-      as_sli(reg_d, shift_width);
-    }
-    else
-    {
-      as_mv(LREG5, reg_d);
-      as_mvi(LREG6, shift_width);
-      lib_call("f_lib_sl");
-      as_mv(reg_d, LREG5);
-    }
-  }
-
-  public void f_lib_sl()
-  {
-    // sl for 1bit-shift
-    // input
-    // LREG5: input value
-    // LREG6: shift width
-    // output
-    // LREG5: result
-    label("f_lib_sl");
-    as_cnz(SP_REG_CP, LREG6);
-    lib_bc("f_lib_sl_L_0");
-    lib_return();
-    label("f_lib_sl_L_0");
-    as_sli(LREG5, 1);
-    lib_wait_dep_pre();
-    as_subi(LREG6, 1);
-    lib_wait_dep_post();
-    lib_ba("f_lib_sl");
-  }
-
-  public void lib_sr(int reg_d, int reg_a)
-  {
-    if (ENABLE_MULTI_BIT_SHIFT == 1)
-    {
-      as_sr(reg_d, reg_a);
-    }
-    else
-    {
-      as_mv(LREG5, reg_d);
-      as_mv(LREG6, reg_a);
-      lib_call("f_lib_sr");
-      as_mv(reg_d, LREG5);
-    }
-  }
-
-  public void lib_sri(int reg_d, int shift_width)
-  {
-    if ((shift_width < 0) || (shift_width > 15))
-    {
-      print_error("lib_sri: shift_width exceeds limit 0 to 15");
-    }
-    if (ENABLE_MULTI_BIT_SHIFT == 1)
-    {
-      as_sri(reg_d, shift_width);
-    }
-    else
-    {
-      as_mv(LREG5, reg_d);
-      as_mvi(LREG6, shift_width);
-      lib_call("f_lib_sr");
-      as_mv(reg_d, LREG5);
-    }
-  }
-
-  public void f_lib_sr()
-  {
-    /*
-    L0:
-    if (shift != 0) goto L1;
-    return;
-    L1:
-    value >> 1;
-    shift--;
-    goto L0;
-    */
-    // sl for 1bit-shift
-    // input
-    // LREG5: input value
-    // LREG6: shift width
-    // output
-    // LREG5: result
-    label("f_lib_sr");
-    as_cnz(SP_REG_CP, LREG6);
-    lib_bc("f_lib_sr_L_0");
-    lib_return();
-    label("f_lib_sr_L_0");
-    as_sri(LREG5, 1);
-    lib_wait_dep_pre();
-    as_subi(LREG6, 1);
-    lib_wait_dep_post();
-    lib_ba("f_lib_sr");
-  }
-
-  public void lib_sra(int reg_d, int reg_a)
-  {
-    if (ENABLE_MULTI_BIT_SHIFT == 1)
-    {
-      as_sra(reg_d, reg_a);
-    }
-    else
-    {
-      as_mv(LREG5, reg_d);
-      as_mv(LREG6, reg_a);
-      lib_call("f_lib_sra");
-      as_mv(reg_d, LREG5);
-    }
-  }
-
-  public void lib_srai(int reg_d, int shift_width)
-  {
-    if ((shift_width < 0) || (shift_width > 15))
-    {
-      print_error("lib_srai: shift_width exceeds limit 0 to 15");
-    }
-    if (ENABLE_MULTI_BIT_SHIFT == 1)
-    {
-      as_srai(reg_d, shift_width);
-    }
-    else
-    {
-      as_mv(LREG5, reg_d);
-      as_mvi(LREG6, shift_width);
-      lib_call("f_lib_sra");
-      as_mv(reg_d, LREG5);
-    }
-  }
-
-  public void f_lib_sra()
-  {
-    /*
-    L0:
-    if (shift != 0) goto L1;
-    return;
-    L1:
-    value >>> 1;
-    shift--;
-    goto L0;
-    */
-    // sl for 1bit-shift
-    // input
-    // LREG5: input value
-    // LREG6: shift width
-    // output
-    // LREG5: result
-    label("f_lib_sra");
-    as_cnz(SP_REG_CP, LREG6);
-    lib_bc("f_lib_sra_L_0");
-    lib_return();
-    label("f_lib_sra_L_0");
-    as_srai(LREG5, 1);
-    lib_wait_dep_pre();
-    as_subi(LREG6, 1);
-    lib_wait_dep_post();
-    lib_ba("f_lib_sra");
   }
 
   public void f_uart_char()
@@ -868,24 +451,32 @@ public class AsmLib extends Asm
     label("f_uart_char");
     lib_push(SP_REG_LINK);
     // LREG0 = UART_BUSY addr
-    as_mvi(LREG0, MASTER_R_BANK_IO_REG);
+    //lib_set_im(LREG0, (MASTER_R_BANK_IO_REG << DEPTH_B_M_R) + IO_REG_R_UART_BUSY);
+    as_mvil(MASTER_R_BANK_IO_REG);
+    as_mv(LREG0, SP_REG_MVIL);
+    as_mvil(DEPTH_B_M_R);
+    as_sl(LREG0, SP_REG_MVIL);
+    as_mvil(IO_REG_R_UART_BUSY);
+    as_nop();
+    as_mvsi(LREG0, MVS_SL);
+    as_add(LREG0, SP_REG_MVIL);
     // LREG1 = UART TX addr
-    lib_wait_dep_pre();
-    as_mvi(LREG1, MASTER_W_BANK_IO_REG);
-    lib_wait_dep_post();
-    lib_sli(LREG0, DEPTH_B_M_R);
-    lib_wait_dependency();
-    lib_sli(LREG1, DEPTH_B_M_W);
-    lib_wait_dependency();
-    as_addi(LREG0, IO_REG_R_UART_BUSY);
-    as_addi(LREG1, IO_REG_W_UART);
+    //lib_set_im(LREG1, (MASTER_W_BANK_IO_REG << DEPTH_B_M_W) + IO_REG_W_UART);
+    as_mvil(MASTER_W_BANK_IO_REG);
+    as_mv(LREG1, SP_REG_MVIL);
+    as_mvil(DEPTH_B_M_W);
+    as_sl(LREG1, SP_REG_MVIL);
+    as_mvil(IO_REG_W_UART);
+    as_nop();
+    as_mvsi(LREG1, MVS_SL);
+    as_add(LREG1, SP_REG_MVIL);
     // while (uart busy){}
-    label("f_uart_char_L_0");
-    lib_wait_dep_pre();
     as_ld(LREG2, LREG0);
-    lib_wait_dep_post();
-    as_cnz(SP_REG_CP, LREG2);
-    lib_bc("f_uart_char_L_0");
+    lib_nop(2);
+    label("f_uart_char_L_0");
+    as_ld(LREG2, LREG0);
+    as_cnz(LREG3, LREG2);
+    lib_bc(LREG3, "f_uart_char_L_0");
     as_st(LREG1, R3);
     lib_pop(SP_REG_LINK);
     lib_return();
@@ -901,31 +492,23 @@ public class AsmLib extends Asm
     label("f_uart_hex");
     /*
     r3 = r3 & 15;
-    LREG0 = 48;
+    SP_REG_MVC = 48;
     LREG1 = r3;
     LREG2 = 87;
-    LREG3 = 9;
-    if (LREG1 > LREG3) {LREG0 = 87};
-    r3 = r3 + LREG0;
+    LREG3 = 10;
+    if (LREG1 - LREG3 >= 0) {SP_REG_MVC = LREG2};
+    r3 = r3 + SP_REG_MVC;
     */
     lib_push(SP_REG_LINK);
     as_andi(R3, 15);
-    lib_set_im(LREG0, 48);
+    lib_set_im(SP_REG_MVC, 48);
     as_mv(LREG1, R3);
-    as_mvi(LREG3, 9);
+    as_mvi(LREG3, 10);
     lib_set_im(LREG2, 87);
-    lib_wait_dep_pre();
-    as_sub(LREG3, LREG1);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    as_cnm(SP_REG_CP, LREG3);
-    lib_wait_dep_post();
-    lib_bc("f_uart_hex_L1");
-    lib_wait_dep_pre();
-    as_mv(LREG0, LREG2);
-    lib_wait_dep_post();
-    label("f_uart_hex_L1");
-    as_add(R3, LREG0);
+    as_sub(LREG1, LREG3);
+    as_cnm(LREG4, LREG1);
+    as_mvc(LREG2, LREG4);
+    as_add(R3, SP_REG_MVC);
     lib_call("f_uart_char");
     lib_pop(SP_REG_LINK);
     lib_return();
@@ -940,7 +523,7 @@ public class AsmLib extends Asm
     // depend: f_uart_char, f_uart_hex
     label("f_uart_hex_word");
     /*
-    push(r4 to r6);
+    push(r4 to r7);
     r4 = r3;
     r5 = WIDTH_M_D - 4;
     do
@@ -950,24 +533,22 @@ public class AsmLib extends Asm
       r5 -= 4;
       call f_uart_hex;
     } while (r5 != 0)
-    pop(r6 to r4);
+    pop(r7 to r4);
     */
     lib_push(SP_REG_LINK);
-    lib_push_regs(R4, 3);
+    lib_push_regs(R4, 4);
     as_mv(R4, R3);
     lib_set_im(R5, WIDTH_M_D - 4);
     label("f_uart_hex_word_L_0");
-    lib_wait_dep_pre();
     as_mv(R6, R4);
-    lib_wait_dep_post();
-    lib_sr(R6, R5);
-    lib_wait_dependency();
-    as_mv(R3, R6);
+    as_sr(R6, R5);
     as_subi(R5, 4);
+    as_nop();
+    as_mvsi(R3, MVS_SR);
     lib_call("f_uart_hex");
-    as_cnm(SP_REG_CP, R5);
-    lib_bc("f_uart_hex_word_L_0");
-    lib_pop_regs(R4, 3);
+    as_cnm(R7, R5);
+    lib_bc(R7, "f_uart_hex_word_L_0");
+    lib_pop_regs(R4, 4);
     lib_pop(SP_REG_LINK);
     lib_return();
   }
@@ -1009,6 +590,8 @@ public class AsmLib extends Asm
       r5++;
       r4--;
       call f_uart_hex_word (put data)
+      r3 = 13;
+      call f_uart_char (put enter)
       r3 = 10;
       call f_uart_char (put enter)
     } while (r4 != 0)
@@ -1016,14 +599,14 @@ public class AsmLib extends Asm
      */
     lib_push(SP_REG_LINK);
     lib_push(R5);
-    lib_wait_dep_pre();
     as_mv(R5, R3);
-    lib_wait_dep_post();
     label("f_uart_memory_dump_L_0");
     as_mv(R3, R5);
     lib_call("f_uart_hex_word");
     lib_set_im(R3, 32);
     lib_call("f_uart_char");
+    as_ld(R3, R5);
+    lib_nop(2);
     as_ld(R3, R5);
     as_addi(R5, 1);
     as_subi(R4, 1);
@@ -1032,22 +615,22 @@ public class AsmLib extends Asm
     lib_call("f_uart_char");
     as_mvi(R3, 10);
     lib_call("f_uart_char");
-    as_cnz(SP_REG_CP, R4);
-    lib_bc("f_uart_memory_dump_L_0");
+    as_cnz(R3, R4);
+    lib_bc(R3, "f_uart_memory_dump_L_0");
     lib_pop(R5);
     lib_pop(SP_REG_LINK);
     lib_return();
   }
 
-  public void f_uart_print()
+  public void f_uart_print_32()
   {
     // uart print string
     // input: r3:text_start_address
     // output: none
     // depend: f_uart_char
-    label("f_uart_print");
+    label("f_uart_print_32");
     /*
-    addr:r4 shift:r5 char:r6
+    addr:r4 shift:r5 char:r3
     addr = r3;
     shift = 24;
     do
@@ -1069,37 +652,35 @@ public class AsmLib extends Asm
     int Rshift = R5;
     int Ri0xff = R6;
     int Ri24 = R7;
+    int Rcp = R8;
 
     lib_push(SP_REG_LINK);
-    lib_push_regs(R4, 4);
+    lib_push_regs(R4, 5);
     as_mv(Raddr, R3);
     lib_set_im(Ri24, 24);
     lib_set_im(Ri0xff, 0xff);
     as_mv(Rshift, Ri24);
-    label("f_uart_print_L_0");
-    lib_wait_dep_pre();
+    label("f_uart_print_32_L_0");
     as_ld(Rchar, Raddr);
-    lib_wait_dep_post();
-    lib_sr(Rchar, Rshift);
-    lib_wait_dependency();
-    lib_wait_dep_pre();
+    lib_nop(2);
+    as_ld(Rchar, Raddr);
+    as_sr(Rchar, Rshift);
+    lib_nop(2);
+    as_mvsi(Rchar, MVS_SR);
     as_and(Rchar, Ri0xff);
-    lib_wait_dep_post();
-    as_cnz(SP_REG_CP, Rchar);
-    lib_bc("f_uart_print_L_1");
-    lib_ba("f_uart_print_L_2");
-    label("f_uart_print_L_1");
+    as_cnz(Rcp, Rchar);
+    lib_bc(Rcp, "f_uart_print_32_L_1");
+    lib_ba("f_uart_print_32_L_2");
+    label("f_uart_print_32_L_1");
     lib_call("f_uart_char");
-    lib_wait_dep_pre();
     as_subi(Rshift, 8);
-    lib_wait_dep_post();
-    as_cnm(SP_REG_CP, Rshift);
-    lib_bc("f_uart_print_L_0");
+    as_cnm(Rcp, Rshift);
+    lib_bc(Rcp, "f_uart_print_32_L_0");
     as_mv(Rshift, Ri24);
     as_addi(Raddr, 1);
-    lib_ba("f_uart_print_L_0");
-    label("f_uart_print_L_2");
-    lib_pop_regs(R4, 4);
+    lib_ba("f_uart_print_32_L_0");
+    label("f_uart_print_32_L_2");
+    lib_pop_regs(R4, 5);
     lib_pop(SP_REG_LINK);
     lib_return();
   }
@@ -1134,53 +715,36 @@ public class AsmLib extends Asm
     int Rshift = R5;
     int Ri0xff = R6;
     int Ri8 = R7;
+    int Rcp = R8;
 
     lib_push(SP_REG_LINK);
-    lib_push_regs(R4, 4);
+    lib_push_regs(R4, 5);
     as_mv(Raddr, R3);
     lib_set_im(Ri8, 8);
     lib_set_im(Ri0xff, 0xff);
     as_mv(Rshift, Ri8);
     label("f_uart_print_16_L_0");
-    lib_wait_dep_pre();
     as_ld(Rchar, Raddr);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
-    lib_sr(Rchar, Rshift);
-    lib_wait_dep_post();
-    lib_wait_dep_pre();
+    lib_nop(2);
+    as_ld(Rchar, Raddr);
+    as_sr(Rchar, Rshift);
+    lib_nop(2);
+    as_mvsi(Rchar, MVS_SR);
     as_and(Rchar, Ri0xff);
-    lib_wait_dep_post();
-    as_cnz(SP_REG_CP, Rchar);
-    lib_bc("f_uart_print_16_L_1");
+    as_cnz(Rcp, Rchar);
+    lib_bc(Rcp, "f_uart_print_16_L_1");
     lib_ba("f_uart_print_16_L_2");
     label("f_uart_print_16_L_1");
     lib_call("f_uart_char");
-    lib_wait_dep_pre();
     as_subi(Rshift, 8);
-    lib_wait_dep_post();
-    as_cnm(SP_REG_CP, Rshift);
-    lib_bc("f_uart_print_16_L_0");
+    as_cnm(Rcp, Rshift);
+    lib_bc(Rcp, "f_uart_print_16_L_0");
     as_mv(Rshift, Ri8);
     as_addi(Raddr, 1);
     lib_ba("f_uart_print_16_L_0");
     label("f_uart_print_16_L_2");
-    lib_pop_regs(R4, 4);
+    lib_pop_regs(R4, 5);
     lib_pop(SP_REG_LINK);
-    lib_return();
-  }
-
-  public void f_wait()
-  {
-    // simple wait ()
-    // input: r3:count
-    // modify: r3
-    label("f_wait");
-    lib_wait_dep_pre();
-    as_subi(R3, 1);
-    lib_wait_dep_post();
-    as_cnz(SP_REG_CP, R3);
-    lib_bc("f_wait");
     lib_return();
   }
 }

@@ -1,20 +1,8 @@
-/*
-  Copyright (c) 2018, miya
-  All rights reserved.
-
-  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// SPDX-License-Identifier: BSD-2-Clause
+// Copyright (c) 2018 miya All rights reserved.
 
 `timescale 1ns / 1ps
-//`define USE_UART
+`define USE_UART
 `define USE_VGA
 `define DEBUG
 
@@ -36,13 +24,8 @@ module testbench;
   localparam DEPTH_FIFO = 3;
   localparam VRAM_WIDTH_BITS = 6;
   localparam VRAM_HEIGHT_BITS = 7;
-  localparam PE_REGFILE_RAM_TYPE = "auto";
   localparam PE_M2S_RAM_TYPE = "auto";
   localparam PE_DEPTH_REG = 4;
-  localparam PE_ENABLE_MUL = FALSE;
-  localparam PE_ENABLE_MULTI_BIT_SHIFT = FALSE;
-  localparam PE_ENABLE_MVC = FALSE;
-  localparam PE_ENABLE_WA = FALSE;
 `else
   // PE:32bit
   localparam WIDTH_P_D = 32;
@@ -51,93 +34,91 @@ module testbench;
   localparam DEPTH_FIFO = 4;
   localparam VRAM_WIDTH_BITS = 8;
   localparam VRAM_HEIGHT_BITS = 9;
-  localparam PE_REGFILE_RAM_TYPE = "auto";
   localparam PE_M2S_RAM_TYPE = "auto";
   localparam PE_DEPTH_REG = 5;
-  localparam PE_ENABLE_MUL = TRUE;
-  localparam PE_ENABLE_MULTI_BIT_SHIFT = TRUE;
-  localparam PE_ENABLE_MVC = TRUE;
-  localparam PE_ENABLE_WA = TRUE;
 `endif
 
   localparam PE_FIFO_RAM_TYPE = "auto";
-  localparam PE_ENABLE_MVIL = TRUE;
   localparam UART_CLK_HZ = 50000000;
   localparam UART_SCLK_HZ = 5000000;
 
-  reg clk;
-  reg reset;
+  reg        clk;
+  reg        reset;
   wire [15:0] led;
 `ifdef USE_UART
   // uart
-  wire uart_txd;
-  wire uart_rxd;
-  wire uart_re;
-  wire [7:0] uart_data_rx;
+  wire        uart_txd;
+  wire        uart_rxd;
+  wire        uart_re;
+  wire [7:0]  uart_data_rx;
 `endif
 `ifdef USE_VGA
-  localparam VRAM_BPP = 3;
-  localparam STEPV = 40;
-  wire VGA_HS;
-  wire VGA_VS;
+  localparam  VRAM_BPP = 3;
+  localparam  STEPV = 40;
+  wire        VGA_HS;
+  wire        VGA_VS;
   wire [VRAM_BPP-1:0] VGA_COLOR;
 `endif
 
-  integer i;
+  integer             i;
   initial
+  begin
+    $dumpfile("wave.vcd");
+    $dumpvars(10, testbench);
+`ifdef USE_UART
+     $monitor("time: %d reset: %d led: %d uart_re: %d uart_data_rx: %c", $time, reset, led, uart_re, uart_data_rx);
+`else
+     $monitor("time: %d reset: %d led: %d", $time, reset, led);
+`endif
+    for (i = 0; i < (1 << DEPTH_REG); i = i + 1)
     begin
-      $dumpfile("wave.vcd");
-      $dumpvars(10, testbench);
-      $monitor("time: %d reset: %d led: %d uart_re: %d uart_data_rx: %c", $time, reset, led, uart_re, uart_data_rx);
-      for (i = 0; i < (1 << DEPTH_REG); i = i + 1)
-        begin
-          $dumpvars(0, testbench.mini16_soc_0.mini16_cpu_master.reg_file.rw_port_ram_a.gen.ram[i]);
-        end
-      for (i = 0; i < (1 << PE_DEPTH_REG); i = i + 1)
-        begin
-          $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[0].mini16_pe_0.mini16_cpu_0.reg_file.rw_port_ram_a.gen.ram[i]);
-          $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[1].mini16_pe_0.mini16_cpu_0.reg_file.rw_port_ram_a.gen.ram[i]);
-        end
-      for (i = 0; i < 4; i = i + 1)
-        begin
-          $dumpvars(0, testbench.mini16_soc_0.master_mem_d.ram[i]);
-          $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[0].mini16_pe_0.shared_m2s.gen.ram[i]);
-          $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[1].mini16_pe_0.shared_m2s.gen.ram[i]);
-          $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[2].mini16_pe_0.shared_m2s.gen.ram[i]);
-          $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[3].mini16_pe_0.shared_m2s.gen.ram[i]);
-          $dumpvars(0, testbench.mini16_soc_0.shared_s2m.gen.ram[i]);
-        end
-      for (i = 0; i < 16; i = i + 1)
-        begin
-          $dumpvars(0, testbench.mini16_soc_0.io_reg_r[i]);
-          $dumpvars(0, testbench.mini16_soc_0.io_reg_w[i]);
-        end
+      $dumpvars(0, testbench.mini16_soc_0.mini16sc_cpu_master.regfile[i]);
     end
+    for (i = 0; i < (1 << PE_DEPTH_REG); i = i + 1)
+    begin
+      $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[0].mini16_pe_0.mini16sc_cpu_0.regfile[i]);
+      $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[1].mini16_pe_0.mini16sc_cpu_0.regfile[i]);
+    end
+    for (i = 0; i < 4; i = i + 1)
+    begin
+      $dumpvars(0, testbench.mini16_soc_0.master_mem_d.ram[i]);
+      $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[0].mini16_pe_0.shared_m2s.gen.ram[i]);
+      $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[1].mini16_pe_0.shared_m2s.gen.ram[i]);
+      $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[2].mini16_pe_0.shared_m2s.gen.ram[i]);
+      $dumpvars(0, testbench.mini16_soc_0.mini16_pe_gen[3].mini16_pe_0.shared_m2s.gen.ram[i]);
+      $dumpvars(0, testbench.mini16_soc_0.shared_s2m.gen.ram[i]);
+    end
+    for (i = 0; i < 16; i = i + 1)
+    begin
+      $dumpvars(0, testbench.mini16_soc_0.io_reg_r[i]);
+      $dumpvars(0, testbench.mini16_soc_0.io_reg_w[i]);
+    end
+  end
 
   // generate clk
   initial
+  begin
+    clk = 1'b1;
+    forever
     begin
-      clk = 1'b1;
-      forever
-        begin
-          #(STEP / 2) clk = ~clk;
-        end
+      #(STEP / 2) clk = ~clk;
     end
+  end
 
   // generate reset signal
   initial
-    begin
-      reset = 1'b0;
-      repeat (10) @(posedge clk) reset <= 1'b1;
-      @(posedge clk) reset <= 1'b0;
-    end
+  begin
+    reset = 1'b0;
+    repeat (10) @(posedge clk) reset <= 1'b1;
+    @(posedge clk) reset <= 1'b0;
+  end
 
   // stop simulation after TICKS
   initial
-    begin
-      repeat (TICKS) @(posedge clk);
-      $finish;
-    end
+  begin
+    repeat (TICKS) @(posedge clk);
+    $finish;
+  end
 
 `ifdef USE_VGA
   reg clkv;
@@ -148,19 +129,19 @@ module testbench;
   assign VGA_COLOR = VGA_COLOR_in;
 
   initial
+  begin
+    clkv = 1'b1;
+    forever
     begin
-      clkv = 1'b1;
-      forever
-        begin
-          #(STEPV / 2) clkv = ~clkv;
-        end
+      #(STEPV / 2) clkv = ~clkv;
     end
+  end
 
   always @(posedge clkv)
-    begin
-      resetv1 <= reset;
-      resetv <= resetv1;
-    end
+  begin
+    resetv1 <= reset;
+    resetv <= resetv1;
+  end
 `endif
 
   mini16_soc
@@ -174,15 +155,9 @@ module testbench;
       .DEPTH_FIFO (DEPTH_FIFO),
       .VRAM_WIDTH_BITS (VRAM_WIDTH_BITS),
       .VRAM_HEIGHT_BITS (VRAM_HEIGHT_BITS),
-      .PE_REGFILE_RAM_TYPE (PE_REGFILE_RAM_TYPE),
       .PE_FIFO_RAM_TYPE (PE_FIFO_RAM_TYPE),
       .PE_M2S_RAM_TYPE (PE_M2S_RAM_TYPE),
-      .PE_DEPTH_REG (PE_DEPTH_REG),
-      .PE_ENABLE_MVIL (PE_ENABLE_MVIL),
-      .PE_ENABLE_MUL (PE_ENABLE_MUL),
-      .PE_ENABLE_MULTI_BIT_SHIFT (PE_ENABLE_MULTI_BIT_SHIFT),
-      .PE_ENABLE_MVC (PE_ENABLE_MVC),
-      .PE_ENABLE_WA (PE_ENABLE_WA)
+      .PE_DEPTH_REG (PE_DEPTH_REG)
       )
   mini16_soc_0
     (

@@ -1,6 +1,6 @@
 set board_type kv260
 set rtl_top_name rtl_top
-set rtl_files {rtl_top.v topinclude.v ../cdc_synchronizer.v ../default_master_code_mem.v ../default_master_data_mem.v ../default_pe_code_mem.v ../default_pe_data_mem.v ../dual_clk_ram.v ../fifo.v ../harvester.v ../mini16_cpu.v ../mini16_pe.v ../mini16_soc.v ../r2w1_port_ram.v ../rw_port_ram.v ../shift_register.v ../sprite.v ../uart.v ../uart_io.v ../vga_iface.v}
+set rtl_files {rtl_top.v topinclude.v ../cdc_synchronizer.v ../default_master_code_mem.v ../default_master_data_mem.v ../default_pe_code_mem.v ../default_pe_data_mem.v ../dual_clk_ram.v ../fifo.v ../harvester.v ../mini16sc_cpu.v ../mini16_pe.v ../mini16_soc.v ../r2w1_port_ram.v ../rw_port_ram.v ../shift_register.v ../sprite.v ../uart.v ../uart_io.v ../vga_iface.v}
 set pin_xdc_file {pins.xdc}
 set timing_xdc_file {timings.xdc}
 set project_name project_1

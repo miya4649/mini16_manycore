@@ -28,7 +28,7 @@
 *
 ******************************************************************************/
 
-/* 03/31/24 Modified by miya */
+/* 08/11/24 Modified by miya */
 
 /***************************** Include Files *********************************/
 
@@ -117,20 +117,11 @@ int main()
 int DpdmaVideoExample(Run_Config *RunCfgPtr)
 
 {
-	u32 Status;
 	/* Initialize the application configuration */
 	InitRunConfig(RunCfgPtr);
-
-	Status = InitDpDmaSubsystem(RunCfgPtr);
-	if (Status != XST_SUCCESS) {
-				return XST_FAILURE;
-	}
-
+	sleep(1);
+	DpPsu_Run(RunCfgPtr);
 	SetupInterrupts(RunCfgPtr);
-
-	// Initialize again
-	InitDpDmaSubsystem(RunCfgPtr);
-
 	return XST_SUCCESS;
 }
 

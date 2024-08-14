@@ -1,17 +1,5 @@
-/*
-  Copyright (c) 2015, miya
-  All rights reserved.
-
-  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// SPDX-License-Identifier: BSD-2-Clause
+// Copyright (c) 2015 miya All rights reserved.
 
 import java.io.*;
 import java.util.*;
@@ -27,27 +15,28 @@ public class Asm
   private final HashMap<String, Integer> labelValue = new HashMap<String, Integer>();
 
   // opcode
-  private static final int I_NOP  = 0x00; // 5'b00000;
-  private static final int I_ST   = 0x01; // 5'b00001;
-  private static final int I_MVC  = 0x02; // 5'b00010;
-  private static final int I_BA   = 0x04; // 5'b00100;
-  private static final int I_BC   = 0x05; // 5'b00101;
-  private static final int I_WA   = 0x06; // 5'b00110;
-  private static final int I_BL   = 0x07; // 5'b00111;
-  private static final int I_ADD  = 0x08; // 5'b01000;
-  private static final int I_SUB  = 0x09; // 5'b01001;
-  private static final int I_AND  = 0x0a; // 5'b01010;
-  private static final int I_OR   = 0x0b; // 5'b01011;
-  private static final int I_XOR  = 0x0c; // 5'b01100;
-  private static final int I_MUL  = 0x0d; // 5'b01101;
-  private static final int I_MV   = 0x10; // 5'b10000;
-  private static final int I_MVIL = 0x11; // 5'b10001;
-  private static final int I_LD   = 0x17; // 5'b10111;
-  private static final int I_SR   = 0x18; // 5'b11000;
-  private static final int I_SL   = 0x19; // 5'b11001;
-  private static final int I_SRA  = 0x1a; // 5'b11010;
-  private static final int I_CNZ  = 0x1c; // 5'b11100;
-  private static final int I_CNM  = 0x1d; // 5'b11101;
+  public static final int I_NOP  = 0x00;
+  public static final int I_ST   = 0x01;
+  public static final int I_MVC  = 0x02;
+  public static final int I_BA   = 0x03;
+  public static final int I_BC   = 0x04;
+  public static final int I_MUL  = 0x05;
+  public static final int I_SR   = 0x06;
+  public static final int I_SL   = 0x07;
+  public static final int I_SRA  = 0x08;
+
+  public static final int I_ADD  = 0x10;
+  public static final int I_SUB  = 0x11;
+  public static final int I_AND  = 0x12;
+  public static final int I_OR   = 0x13;
+  public static final int I_XOR  = 0x14;
+  public static final int I_MV   = 0x15;
+  public static final int I_MVIL = 0x16;
+  public static final int I_MVS  = 0x17;
+  public static final int I_BL   = 0x18;
+  public static final int I_LD   = 0x19;
+  public static final int I_CNZ  = 0x1a;
+  public static final int I_CNM  = 0x1b;
 
   public void write_mem()
   {
@@ -416,11 +405,6 @@ public class Asm
     set_inst_normal(reg_d, reg_a, 1, I_ST);
   }
 
-  public void as_wa(int reg_a)
-  {
-    set_inst_normal(0, reg_a, 0, I_WA);
-  }
-
   public void as_mv(int reg_d, int reg_a)
   {
     set_inst_normal(reg_d, reg_a, 0, I_MV);
@@ -507,6 +491,16 @@ public class Asm
   public void as_mvc(int reg_d, int reg_a)
   {
     set_inst_normal(reg_d, reg_a, 0, I_MVC);
+  }
+
+  public void as_mvs(int reg_d, int reg_a)
+  {
+    set_inst_normal(reg_d, reg_a, 0, I_MVS);
+  }
+
+  public void as_mvsi(int reg_d, int reg_a)
+  {
+    set_inst_normal(reg_d, reg_a, 1, I_MVS);
   }
 
   public void as_sr(int reg_d, int reg_a)

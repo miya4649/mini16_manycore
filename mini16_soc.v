@@ -1,17 +1,5 @@
-/*
-  Copyright (c) 2019, miya
-  All rights reserved.
-
-  Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
-
-  1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
-
-  2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
-
-  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-  IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-  PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
+// SPDX-License-Identifier: BSD-2-Clause
+// Copyright (c) 2019 miya All rights reserved.
 
 module mini16_soc
   #(
@@ -31,17 +19,10 @@ module mini16_soc
     parameter VRAM_BPP = 3,
     parameter VRAM_WIDTH_BITS = 8,
     parameter VRAM_HEIGHT_BITS = 9,
-    parameter MASTER_REGFILE_RAM_TYPE = "auto",
-    parameter PE_REGFILE_RAM_TYPE = "auto",
     parameter PE_FIFO_RAM_TYPE = "auto",
     parameter PE_M2S_RAM_TYPE = "auto",
     parameter VRAM_RAM_TYPE = "auto",
-    parameter PE_DEPTH_REG = 5,
-    parameter PE_ENABLE_MVIL = 1'b1,
-    parameter PE_ENABLE_MUL = 1'b1,
-    parameter PE_ENABLE_MULTI_BIT_SHIFT = 1'b1,
-    parameter PE_ENABLE_MVC = 1'b1,
-    parameter PE_ENABLE_WA = 1'b1
+    parameter PE_DEPTH_REG = 5
     )
   (
    input                 clk,
@@ -516,23 +497,15 @@ module mini16_soc
   reg [WIDTH_M_D-1:0] master_d_r_data;
   wire [DEPTH_V_M_W-DEPTH_B_M_W-1:0] master_d_w_bank;
   assign master_d_w_bank = master_d_w_addr[DEPTH_V_M_W-1:DEPTH_B_M_W];
-  mini16_cpu
+  mini16sc_cpu
     #(
       .WIDTH_I (WIDTH_I),
       .WIDTH_D (WIDTH_M_D),
       .DEPTH_I (DEPTH_M_I),
       .DEPTH_D (DEPTH_V_M),
-      .DEPTH_REG (DEPTH_REG),
-      .ENABLE_MVIL (TRUE),
-      .ENABLE_MUL (TRUE),
-      .ENABLE_MULTI_BIT_SHIFT (TRUE),
-      .ENABLE_MVC (TRUE),
-      .ENABLE_WA (TRUE),
-      .ENABLE_INT (TRUE),
-      .FULL_PIPELINED_ALU (FALSE),
-      .REGFILE_RAM_TYPE (MASTER_REGFILE_RAM_TYPE)
+      .DEPTH_REG (DEPTH_REG)
       )
-  mini16_cpu_master
+  mini16sc_cpu_master
     (
      .clk (clk),
 `ifdef USE_UART
@@ -631,14 +604,8 @@ module mini16_soc
                .DEPTH_V_M2S (DEPTH_V_M2S),
                .DEPTH_B_M2S (DEPTH_B_M2S),
                .FIFO_RAM_TYPE (PE_FIFO_RAM_TYPE),
-               .REGFILE_RAM_TYPE (PE_REGFILE_RAM_TYPE),
                .M2S_RAM_TYPE (PE_M2S_RAM_TYPE),
-               .DEPTH_REG (PE_DEPTH_REG),
-               .ENABLE_MVIL (PE_ENABLE_MVIL),
-               .ENABLE_MUL (PE_ENABLE_MUL),
-               .ENABLE_MULTI_BIT_SHIFT (PE_ENABLE_MULTI_BIT_SHIFT),
-               .ENABLE_MVC (PE_ENABLE_MVC),
-               .ENABLE_WA (PE_ENABLE_WA)
+               .DEPTH_REG (PE_DEPTH_REG)
                )
         mini16_pe_0
              (
