@@ -4,6 +4,10 @@ FPGA many-core processor implementation written in Verilog HDL
 
 Up to 501-core processors are implemented in a single FPGA
 
+
+https://github.com/user-attachments/assets/b918324b-8c1b-45cb-a640-6a24a39ccb09
+
+
 ## Features:
 
 - 32bit data/register width processor core version
